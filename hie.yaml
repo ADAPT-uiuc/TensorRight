@@ -3,6 +3,12 @@ cradle:
     - path: "./src"
       component: "tensor-right:lib"
 
+    - path: "./rules/cs526/2025-03-27-18-11-19.hs"
+      component: "tensor-right:exe:candidate-01"
+
+    - path: "./rules/cs526/Paths_tensor_right.hs"
+      component: "tensor-right:exe:candidate-01"
+
     - path: "./rules/add/Main.hs"
       component: "tensor-right:exe:rules-add"
 
