@@ -196,7 +196,13 @@ executables:
     default-extensions: *exe-extensions
   candidate-01:
     source-dirs: rules/cs526
-    main: 2025-03-27-18-11-19.hs
+    main: candidate-01.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  candidate-02:
+    source-dirs: rules/cs526
+    main: candidate-02.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
