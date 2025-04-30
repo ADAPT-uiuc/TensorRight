@@ -114,6 +114,62 @@ rule09_correct _ = do
   rhs <- numBinOp Max (numBinOp Max tX tZ) tY
   rewrite "Max(Max(X, Y), Max(Z, Y)) ==> Max(Max(X, Z), Y)" lhs rhs
 
+rule10_forward :: forall a. NumRule a
+rule10_forward _ = do
+  [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
+  [rc0sizeX, rc0sizeY, rc0sizeZ] <- newMaps ["rc0sizeX", "rc0sizeY", "rc0sizeZ"] rclass0
+  rc1size <- newMap "rc1size" rclass1
+  zeroMap <- newConstMap "zeroMap" 0 rclass0
+  oneMap <- newConstMap "oneMap" 1 rclass0
+  tX <- newTensor @a "X" [rclass0 --> rc0sizeX, rclass1 --> rc1size]
+  tY <- newTensor @a "Y" [rclass0 --> rc0sizeY, rclass1 --> rc1size]
+  tZ <- newTensor @a "Z" [rclass0 --> rc0sizeZ, rclass1 --> rc1size]
+  lhs <- numBinOp Mul (concatTensor tX tY (ByRClass rclass0)) tZ
+  sliceX <-
+    slice tZ $
+      Slice
+        { start = [rclass0 --> zeroMap],
+          end = [rclass0 --> rc0sizeX],
+          strides = [rclass0 --> oneMap]
+        }
+  sliceY <-
+    slice tZ $
+      Slice
+        { start = [rclass0 --> rc0sizeX],
+          end = [rclass0 --> rc0sizeZ],
+          strides = [rclass0 --> oneMap]
+        }
+  rhs <- concatTensor (numBinOp Mul tX sliceX) (numBinOp Mul tY sliceY) (ByRClass rclass0)
+  rewrite "Mul(Concat(X, Y, dim), Z) ==> Concat(Mul(X, Slice(Z)), Mul(Y, Slice(Z)), dim)" lhs rhs
+
+rule10_backward :: forall a. NumRule a
+rule10_backward _ = do
+  [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
+  [rc0sizeX, rc0sizeY, rc0sizeZ] <- newMaps ["rc0sizeX", "rc0sizeY", "rc0sizeZ"] rclass0
+  rc1size <- newMap "rc1size" rclass1
+  zeroMap <- newConstMap "zeroMap" 0 rclass0
+  oneMap <- newConstMap "oneMap" 1 rclass0
+  tX <- newTensor @a "X" [rclass0 --> rc0sizeX, rclass1 --> rc1size]
+  tY <- newTensor @a "Y" [rclass0 --> rc0sizeY, rclass1 --> rc1size]
+  tZ <- newTensor @a "Z" [rclass0 --> rc0sizeZ, rclass1 --> rc1size]
+  sliceX <-
+    slice tZ $
+      Slice
+        { start = [rclass0 --> zeroMap],
+          end = [rclass0 --> rc0sizeX],
+          strides = [rclass0 --> oneMap]
+        }
+  sliceY <-
+    slice tZ $
+      Slice
+        { start = [rclass0 --> rc0sizeX],
+          end = [rclass0 --> rc0sizeZ],
+          strides = [rclass0 --> oneMap]
+        }
+  lhs <- concatTensor (numBinOp Mul tX sliceX) (numBinOp Mul tY sliceY) (ByRClass rclass0)
+  rhs <- numBinOp Mul (concatTensor tX tY (ByRClass rclass0)) tZ
+  rewrite "Concat(Mul(X, Slice(Z)), Mul(Y, Slice(Z)), dim) ==> Mul(Concat(X, Y, dim), Z)" lhs rhs
+
 main :: IO ()
 main = do
   print "############################## rule02 ##############################"
@@ -132,3 +188,7 @@ main = do
   verifyNumDSL rule09
   print "############################## rule09_correct ##############################"
   verifyNumDSL rule09_correct
+  print "############################## rule10_forward ##############################"
+  verifyNumDSL rule10_forward
+  print "############################## rule10_backward ##############################"
+  verifyNumDSL rule10_backward
