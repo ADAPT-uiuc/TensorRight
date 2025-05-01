@@ -1,9 +1,7 @@
 module Main (main) where
 
-import Control.Monad.Except (runExceptT)
 import Grisette hiding ((-->))
 import TensorRight
-import TensorRight.Internal.Core.Tensor.TensorInt (tensorValNe)
 
 rule01 :: forall a. NumRule a
 rule01 _ = do

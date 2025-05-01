@@ -144,6 +144,36 @@ executable candidate-03
     , unordered-containers
   default-language: Haskell2010
 
+executable candidate-05
+  main-is: candidate-05.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/cs526
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
 executable rules-add
   main-is: Main.hs
   other-modules:
