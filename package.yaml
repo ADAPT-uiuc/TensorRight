@@ -230,6 +230,30 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  candidate-08:
+    source-dirs: rules/cs526
+    main: candidate-08.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  candidate-09:
+    source-dirs: rules/cs526
+    main: candidate-09.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  candidate-10:
+    source-dirs: rules/cs526
+    main: candidate-10.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  candidate-11:
+    source-dirs: rules/cs526
+    main: candidate-11.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
 
 tests:
   spec:
