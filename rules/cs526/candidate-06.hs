@@ -2,7 +2,6 @@ module Main (main) where
 
 import Grisette hiding ((-->))
 import TensorRight
-import TensorRight (numBinOp)
 
 rule01 :: forall a. NumRule a
 rule01 _ = do
