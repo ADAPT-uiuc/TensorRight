@@ -1,7 +1,9 @@
 module Main (main) where
 
+import Control.Monad.Except (runExceptT)
 import Grisette hiding (dot, (-->))
 import TensorRight
+import TensorRight.Internal.Core.Tensor.TensorInt (tensorValLe)
 
 rule01 :: forall a. NumRule a
 rule01 _ = do
@@ -78,6 +80,190 @@ rule02_backward _ = do
   rhs <- concatTensor (numBinOp Mul tX tY) (numBinOp Mul tU tV) (ByRClass rclass0)
   rewrite "Mul(Concat(X, U, dim), Concat(Y, V, dim)) ==> Concat(Mul(X, Y), Mul(U, V), dim)" lhs rhs
 
+rule03 :: forall a. NumRule a
+rule03 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tMinO <- newTensor @a "MinO" [rclass --> map]
+  tMaxO <- newTensor @a "MaxO" [rclass --> map]
+  tMinI <- newTensor @a "MinI" [rclass --> map]
+  tMaxI <- newTensor @a "MaxI" [rclass --> map]
+  lhs <- clamp tMinO (clamp tMinI tX tMaxI) tMaxO
+  rhs <- clamp tMinO tX tMaxO
+  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinO, X, MaxO)" lhs rhs
+
+rule03_v1 :: forall a. NumRule a
+rule03_v1 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tMinO <- newTensor @a "MinO" [rclass --> map]
+  tMaxO <- newTensor @a "MaxO" [rclass --> map]
+  tMinI <- newTensor @a "MinI" [rclass --> map]
+  tMaxI <- newTensor @a "MaxI" [rclass --> map]
+  lhs <- clamp tMinO (clamp tMinI tX tMaxI) tMaxO
+  rhs <- clamp tMinO tX tMaxO
+  forallIdx <- newMap "forallIdx" rclass
+  numTensorAssumption
+    [tMinI, tMinO]
+    forallIdx
+    ( \[minI, minO] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe minI minO
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  numTensorAssumption
+    [tMaxO, tMaxI]
+    forallIdx
+    ( \[maxO, maxI] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe maxO maxI
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinO, X, MaxO) if minO <= minI and maxO <= maxI" lhs rhs
+
+rule03_v2 :: forall a. NumRule a
+rule03_v2 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tMinO <- newTensor @a "MinO" [rclass --> map]
+  tMaxO <- newTensor @a "MaxO" [rclass --> map]
+  tMinI <- newTensor @a "MinI" [rclass --> map]
+  tMaxI <- newTensor @a "MaxI" [rclass --> map]
+  lhs <- clamp tMinO (clamp tMinI tX tMaxI) tMaxO
+  rhs <- clamp tMinI tX tMaxI
+  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinI, X, MaxI)" lhs rhs
+
+rule03_v3 :: forall a. NumRule a
+rule03_v3 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tMinO <- newTensor @a "MinO" [rclass --> map]
+  tMaxO <- newTensor @a "MaxO" [rclass --> map]
+  tMinI <- newTensor @a "MinI" [rclass --> map]
+  tMaxI <- newTensor @a "MaxI" [rclass --> map]
+  lhs <- clamp tMinO (clamp tMinI tX tMaxI) tMaxO
+  rhs <- clamp tMinI tX tMaxI
+  forallIdx <- newMap "forallIdx" rclass
+  numTensorAssumption
+    [tMinO, tMinI]
+    forallIdx
+    ( \[minO, minI] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe minO minI
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  numTensorAssumption
+    [tMaxI, tMaxO]
+    forallIdx
+    ( \[maxI, maxO] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe maxI maxO
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinI, X, MaxI) if minI <= minO and maxI <= maxO" lhs rhs
+
+rule03_v4 :: forall a. NumRule a
+rule03_v4 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tMinO <- newTensor @a "MinO" [rclass --> map]
+  tMaxO <- newTensor @a "MaxO" [rclass --> map]
+  tMinI <- newTensor @a "MinI" [rclass --> map]
+  tMaxI <- newTensor @a "MaxI" [rclass --> map]
+  lhs <- clamp tMinO (clamp tMinI tX tMaxI) tMaxO
+  rhs <- clamp tMinI tX tMaxI
+  forallIdx <- newMap "forallIdx" rclass
+  numTensorAssumption
+    [tMinO, tMinI]
+    forallIdx
+    ( \[minO, minI] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe minO minI
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  numTensorAssumption
+    [tMaxI, tMaxO]
+    forallIdx
+    ( \[maxI, maxO] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe maxI maxO
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  numTensorAssumption
+    [tMinI, tMaxI]
+    forallIdx
+    ( \[minI, maxI] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe minI maxI
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  numTensorAssumption
+    [tMinO, tMaxO]
+    forallIdx
+    ( \[minO, maxO] -> simpleMerge $ do
+        u <- runExceptT $ tensorValLe minO maxO
+        case u of
+          Left _ -> con True
+          Right v -> return v
+    )
+  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinI, X, MaxI) if [minI, maxI] in [minO, maxO]" lhs rhs
+
+rule04 :: forall a. NumRule a
+rule04 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tY <- newTensor @a "Y" [rclass --> map]
+  tMin <- newTensor @a "Min" [rclass --> map]
+  tMax <- newTensor @a "Max" [rclass --> map]
+  lhs <- clamp tMin (numBinOp Mul tX tY) tMax
+  rhs <- numBinOp Mul (clamp tMin tX tMax) (clamp tMin tY tMax)
+  rewrite "Clamp(Min, Mul(X, Y), Max) ⇒ Mul(Clamp(Min, X, Max), Clamp(Min, Y, Max))" lhs rhs
+
+rule05 :: forall a. NumRule a
+rule05 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tY <- newTensor @a "Y" [rclass --> map]
+  tMin <- newTensor @a "Min" [rclass --> map]
+  tMax <- newTensor @a "Max" [rclass --> map]
+  lhs <- clamp tMin (numBinOp Sub tX tY) tMax
+  rhs <- numBinOp Sub (clamp tMin tX tMax) (clamp tMin tY tMax)
+  rewrite "Clamp(Min, Sub(X, Y), Max) ⇒ Sub(Clamp(Min, X, Max), Clamp(Min, Y, Max))" lhs rhs
+
+rule06 :: forall a. NumRule a
+rule06 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tY <- newTensor @a "Y" [rclass --> map]
+  lhs <- numBinOp Add (numUnaryOp Neg tX) (numUnaryOp Neg tY)
+  rhs <- numUnaryOp Neg (numBinOp Add tX tY)
+  rewrite "Add(Neg(X), Neg(Y)) ⇒ Neg(Add(X, Y))" lhs rhs
+
+rule07 :: forall a. NumRule a
+rule07 _ = do
+  rclass <- newRClass "rclass"
+  map <- newMap "map" rclass
+  tX <- newTensor @a "X" [rclass --> map]
+  tY <- newTensor @a "Y" [rclass --> map]
+  lhs <- numUnaryOp Neg (numBinOp Sub tX tY)
+  rhs <- numBinOp Sub tY tX
+  rewrite "Neg(Sub(X, Y)) ⇒ Sub(Y, X)" lhs rhs
+
 main :: IO ()
 main = do
   print "############################## rule01 ##############################"
@@ -86,3 +272,21 @@ main = do
   verifyNumDSL rule02_forward
   print "############################## rule02_backward ##############################"
   verifyNumDSL rule02_backward
+  print "############################## rule03 ##############################"
+  verifyNumDSL rule03
+  print "############################## rule03_v1 ##############################"
+  verifyNumDSL rule03_v1
+  print "############################## rule03_v2 ##############################"
+  verifyNumDSL rule03_v2
+  print "############################## rule03_v3 ##############################"
+  verifyNumDSL rule03_v3
+  print "############################## rule03_v4 ##############################"
+  verifyNumDSL rule03_v4
+  print "############################## rule04 ##############################"
+  verifyNumDSL rule04
+  print "############################## rule05 ##############################"
+  verifyNumDSL rule05
+  print "############################## rule06 ##############################"
+  verifyNumDSL rule06
+  print "############################## rule07 ##############################"
+  verifyNumDSL rule07
