@@ -63,6 +63,18 @@ cradle:
     - path: "./rules/cs526/Paths_tensor_right.hs"
       component: "tensor-right:exe:candidate-11"
 
+    - path: "./rules/cs526/candidate-13.hs"
+      component: "tensor-right:exe:candidate-13"
+
+    - path: "./rules/cs526/Paths_tensor_right.hs"
+      component: "tensor-right:exe:candidate-13"
+
+    - path: "./rules/cs526/candidate-14.hs"
+      component: "tensor-right:exe:candidate-14"
+
+    - path: "./rules/cs526/Paths_tensor_right.hs"
+      component: "tensor-right:exe:candidate-14"
+
     - path: "./rules/add/Main.hs"
       component: "tensor-right:exe:rules-add"
 
