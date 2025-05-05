@@ -239,10 +239,11 @@ rule09_forward _ = do
   [rcSize, rcStart, rcLength] <- newMaps ["rcSize", "rcStart", "rcLength"] rclass
   tX <- newTensor @a "X" [rclass --> rcSize]
   tY <- newTensor @a "Y" [rclass --> rcSize]
-  let dynamicSliceConfig = DySlice
-        { start = [rclass --> rcStart],
-          sizes = [rclass --> rcLength]
-        }
+  let dynamicSliceConfig =
+        DySlice
+          { start = [rclass --> rcStart],
+            sizes = [rclass --> rcLength]
+          }
   lhs <- numBinOp Add (dynamicSlice tX dynamicSliceConfig) (dynamicSlice tY dynamicSliceConfig)
   rhs <- dynamicSlice (numBinOp Add tX tY) dynamicSliceConfig
   rewrite "Add(DynamicSlice(X, I, S), DynamicSlice(Y, I, S)) ==> DynamicSlice(Add(X, Y), I, S)" lhs rhs
@@ -253,10 +254,11 @@ rule09_backward _ = do
   [rcSize, rcStart, rcLength] <- newMaps ["rcSize", "rcStart", "rcLength"] rclass
   tX <- newTensor @a "X" [rclass --> rcSize]
   tY <- newTensor @a "Y" [rclass --> rcSize]
-  let dynamicSliceConfig = DySlice
-        { start = [rclass --> rcStart],
-          sizes = [rclass --> rcLength]
-        }
+  let dynamicSliceConfig =
+        DySlice
+          { start = [rclass --> rcStart],
+            sizes = [rclass --> rcLength]
+          }
   lhs <- dynamicSlice (numBinOp Add tX tY) dynamicSliceConfig
   rhs <- numBinOp Add (dynamicSlice tX dynamicSliceConfig) (dynamicSlice tY dynamicSliceConfig)
   rewrite "DynamicSlice(Add(X, Y), I, S) ==> Add(DynamicSlice(X, I, S), DynamicSlice(Y, I, S))" lhs rhs
@@ -267,11 +269,12 @@ rule09_slice_forward _ = do
   [rcSize, rcStart, rcEnd, rcStride] <- newMaps ["rcSize", "rcStart", "rcEnd", "rcStride"] rclass
   tX <- newTensor @a "X" [rclass --> rcSize]
   tY <- newTensor @a "Y" [rclass --> rcSize]
-  let sliceConfig = Slice
-        { start = [rclass --> rcStart],
-          end = [rclass --> rcEnd],
-          strides = [rclass --> rcStride]
-        }
+  let sliceConfig =
+        Slice
+          { start = [rclass --> rcStart],
+            end = [rclass --> rcEnd],
+            strides = [rclass --> rcStride]
+          }
   lhs <- numBinOp Add (slice tX sliceConfig) (slice tY sliceConfig)
   rhs <- slice (numBinOp Add tX tY) sliceConfig
   rewrite "Add(Slice(X, S, E, P), Slice(Y, S, E, P)) ==> Slice(Add(X, Y), S, E, P)" lhs rhs
@@ -282,11 +285,12 @@ rule09_slice_backward _ = do
   [rcSize, rcStart, rcEnd, rcStride] <- newMaps ["rcSize", "rcStart", "rcEnd", "rcStride"] rclass
   tX <- newTensor @a "X" [rclass --> rcSize]
   tY <- newTensor @a "Y" [rclass --> rcSize]
-  let sliceConfig = Slice
-        { start = [rclass --> rcStart],
-          end = [rclass --> rcEnd],
-          strides = [rclass --> rcStride]
-        }
+  let sliceConfig =
+        Slice
+          { start = [rclass --> rcStart],
+            end = [rclass --> rcEnd],
+            strides = [rclass --> rcStride]
+          }
   lhs <- slice (numBinOp Add tX tY) sliceConfig
   rhs <- numBinOp Add (slice tX sliceConfig) (slice tY sliceConfig)
   rewrite "Slice(Add(X, Y), S, E, P) ==> Add(Slice(X, S, E, P), Slice(Y, S, E, P))" lhs rhs

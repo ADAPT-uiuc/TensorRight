@@ -144,12 +144,13 @@ rule11 = do
   rc0Zero <- newConstMap "rc0Zero" 0 rclass0
   rc0One <- newConstMap "rc0One" 1 rclass0
   rc1Zero <- newConstMap "rc1Zero" 0 rclass1
-  lhs <- pad shiftedIota (0 :: TensorInt) $
-    Padding
-      { low = [rclass0 --> rc0One, rclass1 --> rc1Zero],
-        interior = [rclass0 --> rc0Zero, rclass1 --> rc1Zero],
-        high = [rclass0 --> rc0Zero, rclass1 --> rc1Zero]
-      }
+  lhs <-
+    pad shiftedIota (0 :: TensorInt) $
+      Padding
+        { low = [rclass0 --> rc0One, rclass1 --> rc1Zero],
+          interior = [rclass0 --> rc0Zero, rclass1 --> rc1Zero],
+          high = [rclass0 --> rc0Zero, rclass1 --> rc1Zero]
+        }
   rc0NewSize <- combineMap "rc0NewSize" (\[s] -> s + 1) [rc0Size]
   rhs <- iota [rclass0 --> rc0NewSize, rclass1 --> rc1Size] (ByRClass rclass0)
   rewrite "Pad(Iota(S, dim), 0, 1, 0, 0) ==> Iota(S+1, dim)" lhs rhs
