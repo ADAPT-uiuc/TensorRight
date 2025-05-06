@@ -1,7 +1,25 @@
 module Main (main) where
 
-import Grisette hiding ((-->))
+import qualified Data.HashMap.Lazy as HM
+import Grisette hiding (dot, (-->))
 import TensorRight
+
+rule02 :: forall a. NumRule a
+rule02 _ = do
+  [rcX, rcY, rcContract, rcBatch, rcNew] <- newRClasses ["rcX", "rcY", "rcContract", "rcBatch", "rcNew"]
+  rcXSize <- newMap "rcXSize" rcX
+  rcYSize <- newMap "rcYSize" rcY
+  rcContractSize <- newMap "rcContractSize" rcContract
+  rcBatchSize <- newMap "rcBatchSize" rcBatch
+  rcNewSize <- newMap "rcNewSize" rcNew
+  [siContractL, siContractR] <- newMaps ["siContractL", "siContractR"] rcContract
+  tX <- newTensor @a "X" [rcX --> rcXSize, rcContract --> rcContractSize, rcBatch --> rcBatchSize]
+  tY <- newTensor @a "Y" [rcY --> rcYSize, rcContract --> rcContractSize, rcBatch --> rcBatchSize]
+  lhs <- dot (broadcast tX [rcNew --> rcNewSize]) (broadcast tY [rcNew --> rcNewSize]) [rcContract --> siContractL] [ByRClass rcBatch, ByRClass rcNew]
+  rhs <- broadcast (dot tX tY [rcContract --> siContractR] [ByRClass rcBatch]) [rcNew --> rcNewSize]
+  siRelation [siContractL, siContractR] $ \[l, r] -> l .== r
+  checkSIMap [siContractL] [siContractR]
+  rewrite "Dot(Broadcast(X, S), Broadcast(Y, S), C, B ∪ S) ==> Broadcast(Dot(X, Y, C, B), S)" lhs rhs
 
 rule03 :: forall a. AnyDTypeRule a
 rule03 _ = do
@@ -37,6 +55,76 @@ rule06 _ = do
   rhs <- constant @a 0 [rclass --> sizeMap]
   rewrite "Add(X, Neg(X)) ==> 0" lhs rhs
 
+rule07 :: forall a. AnyDTypeRule a
+rule07 _ = do
+  rclass <- newRClass "rclass"
+  sizeMap <- newMap "sizeMap" rclass
+  [innerLow, innerHigh, innerInterior] <- newMaps ["innerLow", "innerHigh", "innerInterior"] rclass
+  [outerLow, outerHigh, outerInterior] <- newMaps ["outerLow", "outerHigh", "outerInterior"] rclass
+  rhsLow <- combineMap "rhsLow" sum [innerLow, outerLow]
+  rhsHigh <- combineMap "rhsHigh" sum [innerHigh, outerHigh]
+  rhsInterior <- combineMap "rhsInterior" sum [innerInterior, outerInterior]
+  tX <- newTensor @a "X" [rclass --> sizeMap]
+  let innerPadConfig =
+        Padding
+          { low = [rclass --> innerLow],
+            interior = [rclass --> innerInterior],
+            high = [rclass --> innerHigh]
+          }
+  let outerPadConfig =
+        Padding
+          { low = [rclass --> outerLow],
+            interior = [rclass --> outerInterior],
+            high = [rclass --> outerHigh]
+          }
+  let rhsPadConfig =
+        Padding
+          { low = [rclass --> rhsLow],
+            interior = [rclass --> rhsInterior],
+            high = [rclass --> rhsHigh]
+          }
+  lhs <- pad (pad tX ("a" :: a) innerPadConfig) ("a" :: a) outerPadConfig
+  rhs <- pad tX ("a" :: a) rhsPadConfig
+  rewrite "Pad(Pad(X, a, L1, H1, I1), a, L2, H2, I2) ==> Pad(X, a, L1 + L2, H1 + H2, I1 + I2)" lhs rhs
+
+rule07_v1 :: forall a. AnyDTypeRule a
+rule07_v1 _ = do
+  rclass <- newRClass "rclass"
+  sizeMap <- newMap "sizeMap" rclass
+  [innerLow, innerHigh, innerInterior] <- newMaps ["innerLow", "innerHigh", "innerInterior"] rclass
+  [outerLow, outerHigh, outerInterior] <- newMaps ["outerLow", "outerHigh", "outerInterior"] rclass
+  rhsLow <- combineMap "rhsLow" sum [innerLow, outerLow]
+  rhsHigh <- combineMap "rhsHigh" sum [innerHigh, outerHigh]
+  rhsInterior <- combineMap "rhsInterior" sum [innerInterior, outerInterior]
+  tX <- newTensor @a "X" [rclass --> sizeMap]
+  -- TODO: Generalize to non-zero outer interior padding
+  precondition [outerInterior] $ \[o] -> o .== 0
+  precondition [innerLow, outerLow] $
+    \[il, ol] -> symNot (il .< 0 .&& ol .> 0)
+  precondition [innerHigh, outerHigh] $
+    \[ih, oh] -> symNot (ih .< 0 .&& oh .> 0)
+  let innerPadConfig =
+        Padding
+          { low = [rclass --> innerLow],
+            interior = [rclass --> innerInterior],
+            high = [rclass --> innerHigh]
+          }
+  let outerPadConfig =
+        Padding
+          { low = [rclass --> outerLow],
+            interior = [rclass --> outerInterior],
+            high = [rclass --> outerHigh]
+          }
+  let rhsPadConfig =
+        Padding
+          { low = [rclass --> rhsLow],
+            interior = [rclass --> rhsInterior],
+            high = [rclass --> rhsHigh]
+          }
+  lhs <- pad (pad tX ("a" :: a) innerPadConfig) ("a" :: a) outerPadConfig
+  rhs <- pad tX ("a" :: a) rhsPadConfig
+  rewrite "Pad(Pad(X, a, L1, H1, I1), a, L2, H2, I2) ==> Pad(X, a, L1 + L2, H1 + H2, I1 + I2) if I1 = 0 and I2 = 0" lhs rhs
+
 rule09 :: DSLContext Rewrite
 rule09 = do
   rclass <- newRClass "rclass"
@@ -48,13 +136,38 @@ rule09 = do
   rhs <- numBinOp Div (numBinOp Sub tX tZ) tY
   rewrite "Sub(Div(X, Y), Div(Z, Y)) ==> Div(Sub(X, Z), Y)" lhs rhs
 
+rule10 :: forall a. NumRule a
+rule10 _ = do
+  [rcX, rcY, rcContract, rcBatch, rcNew] <- newRClasses ["rcX", "rcY", "rcContract", "rcBatch", "rcNew"]
+  rcXSize <- newMap "rcXSize" rcX
+  rcYSize <- newMap "rcYSize" rcY
+  rcContractSize <- newMap "rcContractSize" rcContract
+  rcBatchSize <- newMap "rcBatchSize" rcBatch
+  rcNewSize <- newMap "rcNewSize" rcNew
+  [siContractL, siContractR] <- newMaps ["siContractL", "siContractR"] rcContract
+  tX <- newTensor @a "X" [rcX --> rcXSize, rcContract --> rcContractSize, rcBatch --> rcBatchSize]
+  tY <- newTensor @a "Y" [rcY --> rcYSize, rcContract --> rcContractSize, rcBatch --> rcBatchSize]
+  lhs <- dot (broadcast tX [rcNew --> rcNewSize]) tY [rcContract --> siContractL] [ByRClass rcBatch]
+  rhs <- broadcast (dot tX tY [rcContract --> siContractR] [ByRClass rcBatch]) [rcNew --> rcNewSize]
+  siRelation [siContractL, siContractR] $ \[l, r] -> l .== r
+  checkSIMap [siContractL] [siContractR]
+  rewrite "Dot(Broadcast(X, S), Y, C, B) ==> Broadcast(Dot(X, Y, C, B), S)" lhs rhs
+
 main :: IO ()
 main = do
+  print "############################## rule02 ##############################"
+  verifyNumDSL rule02
   print "############################## rule03 ##############################"
   verifyAnyDTypeDSL rule03
   print "############################## rule05 ##############################"
   verifyNumDSL rule05
   print "############################## rule06 ##############################"
   verifyNumDSL rule06
+  print "############################## rule07 ##############################"
+  verifyAnyDTypeDSL rule07
+  print "############################## rule07_v1 ##############################"
+  verifyAnyDTypeDSL rule07_v1
   print "############################## rule09 ##############################"
   verifyDSL rule09
+  print "############################## rule10 ##############################"
+  verifyNumDSL rule10
