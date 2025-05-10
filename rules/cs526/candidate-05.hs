@@ -123,7 +123,7 @@ rule03_v1 _ = do
           Left _ -> con True
           Right v -> return v
     )
-  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinO, X, MaxO) if minO <= minI and maxO <= maxI" lhs rhs
+  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinO, X, MaxO) if minI <= minO and maxO <= maxI" lhs rhs
 
 rule03_v2 :: forall a. NumRule a
 rule03_v2 _ = do
@@ -168,7 +168,7 @@ rule03_v3 _ = do
           Left _ -> con True
           Right v -> return v
     )
-  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinI, X, MaxI) if minI <= minO and maxI <= maxO" lhs rhs
+  rewrite "Clamp(MinO, Clamp(MinI, X, MaxI), MaxO) ⇒ Clamp(MinI, X, MaxI) if minO <= minI and maxI <= maxO" lhs rhs
 
 rule03_v4 :: forall a. NumRule a
 rule03_v4 _ = do
