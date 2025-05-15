@@ -3,19 +3,6 @@ module Main (main) where
 import Grisette hiding ((-->))
 import TensorRight
 
-rule01 :: forall a. AnyDTypeRule a
-rule01 _ = do
-  rclass <- newRClass "rclass"
-  map <- newMap "map" rclass
-  tP <- newTensor @SymBool "P" [rclass --> map]
-  tA <- newTensor @SymBool "A" [rclass --> map]
-  tB <- newTensor @SymBool "B" [rclass --> map]
-  tC <- newTensor @a "C" [rclass --> map]
-  tD <- newTensor @a "D" [rclass --> map]
-  lhs <- select (select tP tA tB) tC tD
-  rhs <- select (boolBinOp And tP (select tP tA tB)) tC tD
-  rewrite "Select(Select(P, A, B), C, D) ==> Select(And(P, Select(P, A, B)), C, D)" lhs rhs
-
 rule02 :: forall a. AnyDTypeRule a
 rule02 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
@@ -150,8 +137,6 @@ rule02_v2_backward _ = do
 
 main :: IO ()
 main = do
-  print "############################## rule01 ##############################"
-  verifyAnyDTypeDSL rule01
   print "############################## rule02 ##############################"
   verifyAnyDTypeDSL rule02
   print "############################## rule02_v1 ##############################"

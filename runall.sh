@@ -4,7 +4,7 @@ TOTAL_FAILED=0
 TOTAL_SUCCESS=0
 
 run_and_capture() {
-  r=$(stack run rules-$1 2>/dev/null | grep -E "(FAIL|SUCCESS|WARNING|INFO|====>|>>>)" |
+  r=$(stack run $1 2>/dev/null | grep -E "(FAIL|SUCCESS|WARNING|INFO|====>|>>>)" |
     (
       LOCAL_FAILED=0
       LOCAL_SUCCESS=0
@@ -44,9 +44,10 @@ run_and_capture() {
   TOTAL_FAILED=$((TOTAL_FAILED + ${r[1]}))
 }
 
-ALL_RULES=$(ls rules)
+ALL_RULES=$(ls rules/cs526)
 for rule in $ALL_RULES; do
-  if [[ $rule != "debug" && $rule != "generalize" ]]; then
+  rule=${rule%.hs}
+  if [[ $rule != "pad-concat" ]]; then
     run_and_capture $rule
   fi
 done

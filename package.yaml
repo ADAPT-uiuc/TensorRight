@@ -284,6 +284,12 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  pad-concat:
+    source-dirs: rules/cs526
+    main: pad-concat.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
 
 tests:
   spec:
