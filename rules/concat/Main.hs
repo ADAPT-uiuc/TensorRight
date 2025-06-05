@@ -47,10 +47,6 @@ rule04 _ = do
   lhs <- concatTensor (slice tensor [rclass0 --> rclass0startMap, rclass1 --> rclass1startMap1] [rclass0 --> rclass0endMap, rclass1 --> rclass1endMap1] [rclass0 --> rclass0strideMap, rclass1 --> rclass1strideMap]) (slice tensor [rclass0 --> rclass0startMap, rclass1 --> rclass1startMap2] [rclass0 --> rclass0endMap, rclass1 --> rclass1endMap2] [rclass0 --> rclass0strideMap, rclass1 --> rclass1strideMap]) (ByRClass rclass1)
   rhs <- slice tensor [rclass0 --> rclass0startMap, rclass1 --> rclass1startMap1] [rclass0 --> rclass0endMap, rclass1 --> rclass1endMap2] [rclass0 --> rclass0strideMap, rclass1 --> rclass1strideMap]
   precondition [rclass1strideMap] $ \[rclass1stride] -> rclass1stride .== 1
-  precondition [rclass1startMap1, rclass1startMap2] $
-    \[rclass1start1, rclass1start2] -> rclass1start1 .<= rclass1start2
-  precondition [rclass1endMap1, rclass1endMap2] $
-    \[rclass1end1, rclass1end2] -> rclass1end1 .<= rclass1end2
   precondition [rclass1endMap1, rclass1startMap2] $
     \[rclass1end1, rclass1start2] -> rclass1end1 .== rclass1start2
   rewrite "Concat(Slice(A), Slice(A)) ⇒ Slice(A)" lhs rhs

@@ -454,7 +454,7 @@ rule03 _ = do
   monitorMapOnFailure "lst" (ByRClass spatialTrivial) siMapLhsSpatialTrivial
   monitorMapOnFailure "rst" (ByRClass spatialTrivial) siMapRhsSpatialTrivial
 
-  rewrite "Conv(A,B) => Dot(A, B)" lhs rhs
+  rewrite "Conv(A,B) ⇒ Dot(A, B)" lhs rhs
 
 main :: IO ()
 main = do

@@ -47,10 +47,6 @@ rule03 _ = do
   tensor <- newTensor @a "tensor" [rclass0 --> sizeMap0]
   lhs <- dynamicSlice (broadcast tensor [rclass1 --> sizeMap1]) DySlice {start = [rclass0 --> startMap0, rclass1 --> startMap1], sizes = [rclass0 --> sliceSizeMap0, rclass1 --> sliceSizeMap1]}
   rhs <- broadcast (dynamicSlice tensor DySlice {start = [rclass0 --> startMap0], sizes = [rclass0 --> sliceSizeMap0]}) [rclass1 --> sliceSizeMap1]
-  precondition [startMap1] $
-    \[start1] -> start1 .>= 0
-  precondition [sizeMap1, startMap1, sliceSizeMap1] $
-    \[size1, start1, sliceSize1] -> start1 + sliceSize1 .<= size1
   rewrite "DynamicSlice(Broadcast(A),...) ⇒ Broadcast(DynamicSlice(A,...))" lhs rhs
 
 rule04 :: forall a. AnyDTypeRule a
@@ -73,12 +69,6 @@ rule05 _ = do
     \[start1, start2, start3] -> start3 .== start1 + start2
   precondition [sliceSizeMap2, sliceSizeMap3] $
     \[sliceSize2, sliceSize3] -> sliceSize3 .== sliceSize2
-  precondition [startMap1] $ \[start1] -> start1 .>= 0
-  precondition [startMap2] $ \[start2] -> start2 .>= 0
-  precondition [sizeMap, startMap1, sliceSizeMap1] $
-    \[size, start1, sliceSize1] -> start1 + sliceSize1 .<= size
-  precondition [sliceSizeMap1, startMap2, sliceSizeMap2] $
-    \[sliceSize1, start2, sliceSize2] -> start2 + sliceSize2 .<= sliceSize1
   rewrite "DynamicSlice(DynamicSlice(A,...),...) ⇒ DynamicSlice(A,...)" lhs rhs
 
 rule06 :: DSLContext Rewrite

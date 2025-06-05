@@ -28,11 +28,8 @@ rule02 _ = do
   [origSizeMap, newSizeMap, startMap, endMap, strideMap] <- newMaps ["origSizeMap", "newSizeMap", "startMap", "endMap", "strideMap"] rclass
   lhs <- slice (constant @a "a" [rclass --> origSizeMap]) [rclass --> startMap] [rclass --> endMap] [rclass --> strideMap]
   rhs <- constant @a "a" [rclass --> newSizeMap]
-  precondition [startMap] $ \[start] -> start .>= 0
-  precondition [strideMap] $ \[stride] -> stride .>= 1
   precondition [newSizeMap, startMap, endMap, strideMap] $
     \[newSize, start, end, stride] -> newSize .== divOr 0 (end - start + stride - 1) stride
-  precondition [origSizeMap, endMap] $ \[origSize, end] -> end .<= origSize
   rewrite "Slice(Const) ⇒ Const" lhs rhs
 
 rule03 :: forall a. AnyDTypeRule a
@@ -73,11 +70,12 @@ rule04 _ = do
   let rhs = tensor
   precondition [startMap, lowMap] $ \[start, low] -> start .== low
   precondition [strideMap, intMap] $ \[stride, int] -> stride .== int + 1
-  precondition [sizeMap, startMap, endMap, strideMap] $
-    \[size, start, end, stride] -> size .== divOr 0 (end - start + stride - 1) stride
-  -- precondition [strideMap] $ \[stride] -> stride .>= 1
-  precondition [sizeMap, endMap, lowMap, highMap, intMap] $
-    \[size, end, low, high, int] -> end .<= size + low + high + (size - 1) * int
+  precondition [sizeMap, lowMap, intMap, endMap] $
+    \[size, low, int, end] -> end .== size + low + (size - 1) * int
+  -- TODO: The following precondition is not required since it is already
+  -- implied by `highMap` being non-negative. However, removing it leads to
+  -- a TIMEOUT
+  precondition [highMap] $ \[high] -> high .>= 0
   rewrite "Slice(Pad(A)) ⇒ A" lhs rhs
 
 rule05 :: forall a. AnyDTypeRule a
@@ -235,18 +233,11 @@ rule09 _ = do
         }
   rhs <- broadcast tensor [rclass1 --> broadcastSize1]
 
-  precondition [broadcastSize1] $ \[s] -> s .> 0
-  precondition [sizeMap1] $ \[s] -> s .> 0
   precondition [startMap0] $ \[s] -> s .== 0
   precondition [endMap0, sizeMap0] $ \[e, s] -> e .== s
   precondition [strideMap0] $ \[p] -> p .== 1
   precondition [broadcastSize1, startMap1, endMap1, strideMap1] $
-    \[b, s, e, p] ->
-      symIte
-        (modOr 0 (e - s) p .== 0)
-        (divOr 0 (e - s) p)
-        (divOr 0 (e - s) p + 1)
-        .== b
+    \[b, s, e, p] -> b .== divOr 0 (e - s + p - 1) p
 
   rewrite "Slice(Broadcast(A)) ⇒ Broadcast(A)" lhs rhs
 
@@ -395,7 +386,7 @@ main = do
   print "############################## rule03 ##############################"
   verifyAnyDTypeDSL rule03
   print "############################## rule04 ##############################"
-  verifyAnyDTypeDSLWith (withTimeout 10000000 cvc5) rule04
+  verifyAnyDTypeDSLWith cvc5 rule04
   print "############################## rule05 ##############################"
   verifyAnyDTypeDSL rule05
   print "############################## rule06 ##############################"

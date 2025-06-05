@@ -23,7 +23,6 @@ rule02 _ = do
   tensor <- newTensor @a "tensor" [rclass0 --> sizeMap0, rclass1 --> sizeMap1]
   lhs <- pad tensor ("a" :: a) [rclass0 --> lowMap0, rclass1 --> lowMap1] [rclass0 --> interiorMap0, rclass1 --> interiorMap1lhs] [rclass0 --> highMap0, rclass1 --> highMap1]
   rhs <- pad tensor ("a" :: a) [rclass0 --> lowMap0, rclass1 --> lowMap1] [rclass0 --> interiorMap0, rclass1 --> interiorMap1rhs] [rclass0 --> highMap0, rclass1 --> highMap1]
-  precondition [interiorMap1lhs] $ \[interior1lhs] -> interior1lhs .>= 0
   precondition [interiorMap1rhs] $ \[interior1rhs] -> interior1rhs .== 0
   precondition [sizeMap1] $ \[size1] -> size1 .== 1
   rewrite "Pad(A,val, low_int_high) ⇒ Pad(A,val,low_0_high)" lhs rhs
@@ -101,8 +100,8 @@ rule04 _ = do
 
   precondition [lowMap0] $ \[low0] -> low0 .< 0
   precondition [highMap0] $ \[high0] -> high0 .< 0
-  precondition [lowMap1] $ \[low1] -> low1 .> 0
-  precondition [highMap1] $ \[high1] -> high1 .> 0
+  precondition [lowMap1] $ \[low1] -> low1 .>= 0
+  precondition [highMap1] $ \[high1] -> high1 .>= 0
   precondition [startMap0, lowMap0] $ \[start0, low0] -> start0 .== abs low0
   precondition [sizeMap0, endMap0, highMap0] $ \[size0, end0, high0] -> end0 .== size0 + high0
   precondition [startMap1] $ \[start1] -> start1 .== 0

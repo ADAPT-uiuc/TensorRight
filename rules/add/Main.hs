@@ -22,7 +22,7 @@ rule02 _ = do
   constTensor <- constant @a 0 [rclass --> map]
   lhs <- numBinOp Add tensor constTensor
   let rhs = tensor
-  rewrite "Add(A,0)⇒A" lhs rhs
+  rewrite "Add(A,0) ⇒ A" lhs rhs
 
 rule03 :: forall a. NumRule a
 rule03 _ = do
@@ -32,7 +32,7 @@ rule03 _ = do
   constTensor <- constant @a 0 [rclass --> map]
   lhs <- numBinOp Add constTensor tensor
   let rhs = tensor
-  rewrite "Add(0,A)⇒A" lhs rhs
+  rewrite "Add(0,A) ⇒ A" lhs rhs
 
 rule04 :: forall a. NumRule a
 rule04 _ = do

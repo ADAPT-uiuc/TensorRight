@@ -20,8 +20,6 @@ rule02 _ = do
   tensor <- newTensor @a "tensor" [rclass --> origSizeMap]
   lhs <- dynamicUpdateSlice (constant @a "a" [rclass --> newSizeMap]) tensor [rclass --> startMap]
   rhs <- pad tensor ("a" :: a) [rclass --> lowMap] [rclass --> interiorMap] [rclass --> highMap]
-  precondition [lowMap] $ \[low] -> low .>= 0
-  precondition [highMap] $ \[high] -> high .>= 0
   precondition [lowMap, startMap] $ \[low, start] -> low .== start
   precondition [interiorMap] $ \[interior] -> interior .== 0
   precondition [lowMap, highMap, origSizeMap, newSizeMap] $
@@ -37,7 +35,7 @@ rule03 _ = do
   lhs <- dynamicUpdateSlice t1 t2 [rclass --> startMap]
   let rhs = t2
   precondition [startMap] $ \[start] -> start .== 0
-  rewrite "DynamicUpdateSlice(A,...) ⇒ A" lhs rhs
+  rewrite "DynamicUpdateSlice(A, B, 0) ⇒ B" lhs rhs
 
 rule04 :: forall a. AnyDTypeRule a
 rule04 _ = do
@@ -49,12 +47,6 @@ rule04 _ = do
   rhs <- dynamicUpdateSlice t1 t2 [rclass --> startMap2]
   precondition [startMap0, startMap1, startMap2] $
     \[start0, start1, start2] -> start2 .== start0 + start1
-  precondition [startMap0] $ \[start0] -> start0 .>= 0
-  precondition [startMap1] $ \[start1] -> start1 .>= 0
-  precondition [sliceSizeMap0, startMap1, sizeMap1] $
-    \[sliceSize0, start1, size1] -> start1 + size1 .<= sliceSize0
-  precondition [startMap0, sliceSizeMap0, sizeMap0] $
-    \[start0, sliceSize0, size0] -> start0 + sliceSize0 .<= size0
   rewrite "DynamicUpdateSlice(A, DynamicUpdateSlice(DynamicSlice(A,...), C ,...),...)) ⇒ DynamicUpdateSlice(A,C,...)" lhs rhs
 
 main :: IO ()

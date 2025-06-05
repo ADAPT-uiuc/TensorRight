@@ -49,9 +49,6 @@ rule05 _ = do
   [origSizeMap, newSizeMap, startMap, endMap, strideMap] <- newMaps ["origSizeMap", "newSizeMap", "startMap", "endMap", "strideMap"] rclass
   lhs <- slice (constant @a "a" [rclass --> origSizeMap]) [rclass --> startMap] [rclass --> endMap] [rclass --> strideMap]
   rhs <- constant @a "a" [rclass --> newSizeMap]
-  precondition [startMap] $ \[start] -> start .>= 0
-  precondition [strideMap] $ \[stride] -> stride .>= 1
-  precondition [origSizeMap, endMap] $ \[origSize, end] -> end .<= origSize
   precondition [newSizeMap, startMap, endMap, strideMap] $
     \[newSize, start, end, stride] -> end .== start + newSize * stride
   rewrite "Slice(Broadcast(Scalar)) ⇒ Broadcast(Scalar)" lhs rhs
@@ -62,9 +59,6 @@ rule06 _ = do
   [origSizeMap, newSizeMap, startMap] <- newMaps ["origSizeMap", "newSizeMap", "startMap"] rclass
   lhs <- dynamicSlice (constant @a "a" [rclass --> origSizeMap]) DySlice {start = [rclass --> startMap], sizes = [rclass --> newSizeMap]}
   rhs <- constant @a "a" [rclass --> newSizeMap]
-  precondition [startMap] $ \[start] -> start .>= 0
-  precondition [origSizeMap, startMap, newSizeMap] $
-    \[origSize, start, newSize] -> start + newSize .<= origSize
   rewrite "DynamicSlice(Broadcast(Scalar)) ⇒ Broadcast(Scalar)" lhs rhs
 
 rule07 :: DSLContext Rewrite

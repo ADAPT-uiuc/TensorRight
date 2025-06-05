@@ -10,7 +10,7 @@ rule00 _ = do
   constTensor <- constant @a 0 [rclass --> map]
   lhs <- numBinOp Sub tensor constTensor
   let rhs = tensor
-  rewrite "Sub(A,0)⇒A" lhs rhs
+  rewrite "Sub(A,0) ⇒ A" lhs rhs
 
 rule01 :: forall a. NumRule a
 rule01 _ = do
@@ -21,7 +21,7 @@ rule01 _ = do
   negConstTensor <- constant @a (-"x") [rclass --> map]
   lhs <- numBinOp Sub tensor constTensor
   rhs <- numBinOp Add tensor negConstTensor
-  rewrite "Sub(A,Const)⇒Add(A,Neg(Const))" lhs rhs
+  rewrite "Sub(A,Const) ⇒ Add(A,Neg(Const))" lhs rhs
 
 rule02 :: forall a. NumRule a
 rule02 _ = do
@@ -31,7 +31,7 @@ rule02 _ = do
   constTensor <- constant @a 0 [rclass --> map]
   lhs <- numBinOp Sub tensor tensor
   let rhs = constTensor
-  rewrite "Sub(A,A)⇒0" lhs rhs
+  rewrite "Sub(A,A) ⇒ 0" lhs rhs
 
 main :: IO ()
 main = do
