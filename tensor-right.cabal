@@ -54,186 +54,6 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-add
-  main-is: Main.hs
-  other-modules:
-      Paths_tensor_right
-  hs-source-dirs:
-      rules/add
-  default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
-  default-language: Haskell2010
-
-executable rules-broadcast
-  main-is: Main.hs
-  other-modules:
-      Paths_tensor_right
-  hs-source-dirs:
-      rules/broadcast
-  default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
-  default-language: Haskell2010
-
-executable rules-clamp
-  main-is: Main.hs
-  other-modules:
-      Paths_tensor_right
-  hs-source-dirs:
-      rules/clamp
-  default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
-  default-language: Haskell2010
-
-executable rules-compare
-  main-is: Main.hs
-  other-modules:
-      Paths_tensor_right
-  hs-source-dirs:
-      rules/compare
-  default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
-  default-language: Haskell2010
-
-executable rules-concat
-  main-is: Main.hs
-  other-modules:
-      Paths_tensor_right
-  hs-source-dirs:
-      rules/concat
-  default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
-  default-language: Haskell2010
-
-executable rules-conv
-  main-is: Main.hs
-  other-modules:
-      Paths_tensor_right
-  hs-source-dirs:
-      rules/conv
-  default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
-  default-language: Haskell2010
-
 executable rules-debug
   main-is: Main.hs
   other-modules:
@@ -264,12 +84,12 @@ executable rules-debug
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-divmod
+executable rules-xla-add
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/divmod
+      rules/xla/add
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -294,12 +114,12 @@ executable rules-divmod
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-dot
+executable rules-xla-broadcast
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/dot
+      rules/xla/broadcast
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -324,12 +144,12 @@ executable rules-dot
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-dyslice
+executable rules-xla-clamp
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/dyslice
+      rules/xla/clamp
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -354,12 +174,12 @@ executable rules-dyslice
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-dyupslice
+executable rules-xla-compare
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/dyupslice
+      rules/xla/compare
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -384,12 +204,12 @@ executable rules-dyupslice
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-generalize
+executable rules-xla-concat
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/generalize
+      rules/xla/concat
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -414,12 +234,12 @@ executable rules-generalize
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-iota
+executable rules-xla-conv
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/iota
+      rules/xla/conv
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -444,12 +264,12 @@ executable rules-iota
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-logical
+executable rules-xla-divmod
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/logical
+      rules/xla/divmod
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -474,12 +294,12 @@ executable rules-logical
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-max
+executable rules-xla-dot
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/max
+      rules/xla/dot
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -504,12 +324,12 @@ executable rules-max
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-mul
+executable rules-xla-dyslice
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/mul
+      rules/xla/dyslice
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -534,12 +354,12 @@ executable rules-mul
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-not
+executable rules-xla-dyupslice
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/not
+      rules/xla/dyupslice
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -564,12 +384,12 @@ executable rules-not
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-pad
+executable rules-xla-generalize
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/pad
+      rules/xla/generalize
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -594,12 +414,12 @@ executable rules-pad
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-reduce
+executable rules-xla-iota
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/reduce
+      rules/xla/iota
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -624,12 +444,12 @@ executable rules-reduce
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-relabel
+executable rules-xla-logical
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/relabel
+      rules/xla/logical
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -654,12 +474,12 @@ executable rules-relabel
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-reverse
+executable rules-xla-max
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/reverse
+      rules/xla/max
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -684,12 +504,12 @@ executable rules-reverse
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-select
+executable rules-xla-mul
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/select
+      rules/xla/mul
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -714,12 +534,12 @@ executable rules-select
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-slice
+executable rules-xla-not
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/slice
+      rules/xla/not
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings
@@ -744,12 +564,192 @@ executable rules-slice
     , unordered-containers
   default-language: Haskell2010
 
-executable rules-sub
+executable rules-xla-pad
   main-is: Main.hs
   other-modules:
       Paths_tensor_right
   hs-source-dirs:
-      rules/sub
+      rules/xla/pad
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-xla-reduce
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/xla/reduce
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-xla-relabel
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/xla/relabel
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-xla-reverse
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/xla/reverse
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-xla-select
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/xla/select
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-xla-slice
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/xla/slice
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-xla-sub
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/xla/sub
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings

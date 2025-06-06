@@ -50,146 +50,148 @@ _exe-extensions: &exe-extensions
   - RankNTypes
 
 executables:
-  rules-add:
-    source-dirs: rules/add
+  # XLA Executables
+  rules-xla-add:
+    source-dirs: rules/xla/add
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-mul:
-    source-dirs: rules/mul
+  rules-xla-mul:
+    source-dirs: rules/xla/mul
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-reduce:
-    source-dirs: rules/reduce
+  rules-xla-reduce:
+    source-dirs: rules/xla/reduce
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-compare:
-    source-dirs: rules/compare
+  rules-xla-compare:
+    source-dirs: rules/xla/compare
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-slice:
-    source-dirs: rules/slice
+  rules-xla-slice:
+    source-dirs: rules/xla/slice
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-iota:
-    source-dirs: rules/iota
+  rules-xla-iota:
+    source-dirs: rules/xla/iota
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-pad:
-    source-dirs: rules/pad
+  rules-xla-pad:
+    source-dirs: rules/xla/pad
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-dyslice:
-    source-dirs: rules/dyslice
+  rules-xla-dyslice:
+    source-dirs: rules/xla/dyslice
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-dyupslice:
-    source-dirs: rules/dyupslice
+  rules-xla-dyupslice:
+    source-dirs: rules/xla/dyupslice
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-broadcast:
-    source-dirs: rules/broadcast
+  rules-xla-broadcast:
+    source-dirs: rules/xla/broadcast
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-concat:
-    source-dirs: rules/concat
+  rules-xla-concat:
+    source-dirs: rules/xla/concat
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-logical:
-    source-dirs: rules/logical
+  rules-xla-logical:
+    source-dirs: rules/xla/logical
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-relabel:
-    source-dirs: rules/relabel
+  rules-xla-relabel:
+    source-dirs: rules/xla/relabel
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-dot:
-    source-dirs: rules/dot
+  rules-xla-dot:
+    source-dirs: rules/xla/dot
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
-  rules-conv:
-    source-dirs: rules/conv
+  rules-xla-conv:
+    source-dirs: rules/xla/conv
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  rules-xla-max:
+    source-dirs: rules/xla/max
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-xla-not:
+    source-dirs: rules/xla/not
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-xla-clamp:
+    source-dirs: rules/xla/clamp
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-xla-select:
+    source-dirs: rules/xla/select
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-xla-reverse:
+    source-dirs: rules/xla/reverse
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-xla-sub:
+    source-dirs: rules/xla/sub
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-xla-divmod:
+    source-dirs: rules/xla/divmod
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-xla-generalize:
+    source-dirs: rules/xla/generalize
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  # Other Executables
   rules-debug:
     source-dirs: rules/debug
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-max:
-    source-dirs: rules/max
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-not:
-    source-dirs: rules/not
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-clamp:
-    source-dirs: rules/clamp
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-select:
-    source-dirs: rules/select
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-reverse:
-    source-dirs: rules/reverse
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-sub:
-    source-dirs: rules/sub
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-divmod:
-    source-dirs: rules/divmod
-    main: Main.hs
-    dependencies: tensor-right
-    ghc-options: *exe-ghc-options
-    default-extensions: *exe-extensions
-  rules-generalize:
-    source-dirs: rules/generalize
     main: Main.hs
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
