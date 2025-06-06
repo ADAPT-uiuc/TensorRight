@@ -581,8 +581,8 @@ broadcast to broadcastSizes = do
   assert "new axes must not exist in the original tensor" $
     HS.null $
       axes `HS.intersection` broadcastAxes
-  assert "new axes must has positive size" $
-    symAll (.> 0) $
+  assert "new axes must have non-negative sizes" $
+    symAll (.>= 0) $
       HM.elems $
         asHashMap broadcastSizes
   mrgReturn $
@@ -907,7 +907,7 @@ dynamicSlice to DySliceArgs {..} = do
   assert "sizes must be a subset of the original axes" $
     allAxes sizes `HS.isSubsetOf` tensorAllAxes t
   let otherOriginalShape = removeAxes (allAxes sizes) $ tensorShape t
-  assert "sizes must be non-negative" $ symAll (.>= 0) $ asHashMap sizes
+  assert "sizes must be strictly positive" $ symAll (.> 0) $ asHashMap sizes
   assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap start
   assert "start + sizes must be in the range of the dimension" $
     symAnd $
@@ -941,6 +941,8 @@ dynamicUpdateSlice to update start = do
   assert "update must have the same axes as original" $
     tensorAllAxes t == tensorAllAxes u
   assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap start
+  assert "update sizes must be strictly positive" $
+    symAll (.> 0) $ asHashMap $ tensorShape u
   assert "start + update must be in the range of the dimension" $
     symAnd $
       HM.mapWithKey
