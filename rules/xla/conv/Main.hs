@@ -125,9 +125,9 @@ rule00 _ = do
   rewrite
     ( T.intercalate
         "\n"
-        [ "Conv(Pad(input, innerLow, innerInt, innerHigh), weights, convLow, 0, convHigh, rdilation)",
+        [ "Conv(Pad(input, innerLow, innerInt, innerHigh), weights, convLow, 1, convHigh, rdilation)",
           " ⇒ ",
-          "Conv(input, weights, convLow + innerLow, innerInt, convHigh + innerHigh, rdilation)"
+          "Conv(input, weights, convLow + innerLow, innerInt + 1, convHigh + innerHigh, rdilation)"
         ]
     )
     lhs
@@ -161,10 +161,11 @@ rule01 _ = do
 
   strides <- newConstMap "strides" 1 spatial
   [convLow, convHigh] <- newNonNegMaps ["convLow", "convHigh"] spatial
-  ldilation <- newConstMap "ldilation" 0 spatial
+  ldilation <- newConstMap "ldilation" 1 spatial
   [innerLow, innerHigh] <- newConstMaps ["innerLow", "innerHigh"] 0 spatial
   innerInt <- newMap "innerInt" spatial
-  lhsRdilation <- newConstMap "lhsRdilation" 0 spatial
+  lhsRdilation <- newConstMap "lhsRdilation" 1 spatial
+  rhsRdilation <- combineMap "rhsRdilation" sum [lhsRdilation, innerInt]
 
   [siMapLhsFeature, siMapRhsFeature] <-
     newMaps ["siMapLhsFeature", "siMapRhsFeature"] feature
@@ -213,7 +214,7 @@ rule01 _ = do
         { low = [spatial --> convLow],
           ldilation = [spatial --> ldilation],
           high = [spatial --> convHigh],
-          rdilation = [spatial --> innerInt]
+          rdilation = [spatial --> rhsRdilation]
         }
 
   siRelation
@@ -228,9 +229,9 @@ rule01 _ = do
   rewrite
     ( T.intercalate
         "\n"
-        [ "Conv(input, Pad(weights, 0, innerInt, 0), stride=1, convLow, ldilation, convHigh, 0)",
+        [ "Conv(input, Pad(weights, 0, innerInt, 0), stride=1, convLow, ldilation, convHigh, 1)",
           " ⇒ ",
-          "Conv(input, weights, stride=1, convLow, ldilation, convHigh, innerInt)"
+          "Conv(input, weights, stride=1, convLow, ldilation, convHigh, innerInt + 1)"
         ]
     )
     lhs
@@ -458,6 +459,9 @@ rule03 _ = do
 
 main :: IO ()
 main = do
+  print "############################## rule00 ##############################"
   verifyNumDSL rule00
+  print "############################## rule01 ##############################"
   verifyNumDSL rule01
+  print "############################## rule03 ##############################"
   verifyNumDSL rule03
