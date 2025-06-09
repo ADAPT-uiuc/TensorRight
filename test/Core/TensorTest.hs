@@ -435,6 +435,16 @@ tensorTest =
                 shape = Just $ fromKVPairs [(Axis "a", 2), (Axis "b", newb)],
                 access = Just $ fromKVPairs [(Axis "a", 1)],
                 expected = Nothing
+              },
+          toTensorTest "new axes contain 0 sized dimensions" $ do
+            TensorTest
+              { tensor =
+                  broadcast
+                    (simpleTensor @SymInteger "x" [("a", 2)])
+                    (fromKVPairs [(Axis "b", 0)]),
+                shape = Just $ fromKVPairs [(Axis "a", 2), (Axis "b", 0)],
+                access = Just $ fromKVPairs [(Axis "a", 1)],
+                expected = Nothing
               }
         ],
       testGroup
@@ -1089,6 +1099,18 @@ tensorTest =
                 shape = Nothing,
                 access = Nothing,
                 expected = Nothing
+              },
+          toTensorTest "slice sizes are zero" $ do
+            let x = simpleTensor @SymInteger "x" [("a", 5), ("b", 6), ("c", 7)]
+            let start =
+                  fromKVPairs [(Axis "a", 1), (Axis "b", 2), (Axis "c", 3)]
+            let shape =
+                  fromKVPairs [(Axis "a", 2), (Axis "b", 3), (Axis "c", 0)]
+            TensorTest
+              { tensor = dynamicSlice x $ DySliceArgs start shape,
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
               }
         ],
       testGroup "dynamicUpdateSlice" $ do
@@ -1134,6 +1156,14 @@ tensorTest =
                   Just $
                     fromKVPairs [(Axis "a", 2), (Axis "b", 4), (Axis "c", 5)],
                 expected = Just $ TensorElemVal "xa2b4c5"
+              },
+          toTensorTest "update sizes are zero" $ do
+            let newUpdate = simpleTensor @SymInteger "y" [("a", 2), ("b", 3), ("c", 0)]
+            TensorTest
+              { tensor = dynamicUpdateSlice x newUpdate start,
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
               }
           ],
       testGroup
