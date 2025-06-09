@@ -548,25 +548,33 @@ tensorTest =
                   sliceStartEndStrides x623 $
                     SliceArgs
                       { start = fromKVPairs [(Axis "a", 1), (Axis "b", 1)],
-                        end = fromKVPairs [(Axis "a", 1)],
+                        end = fromKVPairs [(Axis "a", 4)],
                         strides = fromKVPairs [(Axis "a", 2)]
                       },
-                shape = Nothing,
-                access = Nothing,
-                expected = Nothing
+                shape =
+                  Just $
+                    fromKVPairs [(Axis "a", 2), (Axis "b", 1), (Axis "c", 3)],
+                access =
+                  Just $
+                    fromKVPairs [(Axis "a", 1), (Axis "b", 0), (Axis "c", 2)],
+                expected = Just (TensorElemVal "xa3b1c2")
               },
           toTensorTest "slice stride/end have different axes" $ do
             TensorTest
               { tensor =
                   sliceStartEndStrides x623 $
                     SliceArgs
-                      { start = fromKVPairs [(Axis "a", 1)],
-                        end = fromKVPairs [(Axis "a", 1)],
-                        strides = fromKVPairs [(Axis "a", 2), (Axis "b", 1)]
+                      { start = fromKVPairs [(Axis "b", 1)],
+                        end = fromKVPairs [(Axis "a", 5)],
+                        strides = fromKVPairs [(Axis "a", 2), (Axis "c", 2)]
                       },
-                shape = Nothing,
-                access = Nothing,
-                expected = Nothing
+                shape =
+                  Just $
+                    fromKVPairs [(Axis "a", 3), (Axis "b", 1), (Axis "c", 2)],
+                access =
+                  Just $
+                    fromKVPairs [(Axis "a", 2), (Axis "b", 0), (Axis "c", 1)],
+                expected = Just (TensorElemVal "xa4b1c2")
               },
           toTensorTest "slice with non-existing axes" $ do
             TensorTest

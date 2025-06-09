@@ -623,41 +623,42 @@ sliceStartEndStrides to SliceArgs {..} = do
   let axes = tensorAllAxes t
   -- The semantics is different from the original Rosette implementation.
   -- We allow slicing only part of the axes.
-  assert "start must have the same axes as end" $ allAxes start == allAxes end
-  assert "strides must have the same axes as end" $
-    allAxes strides == allAxes end
-  assert "end must be subset of original axes" $
-    allAxes end `HS.isSubsetOf` axes
-  assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap start
+  let checkAndFillInAxes name indices valMap = do
+        assert (name <> " must be subset of original axes") $
+          allAxes indices `HS.isSubsetOf` axes
+        let diffDims = axes `HS.difference` allAxes indices
+        let emptyIndices =
+              restrictAxes diffDims (fromHashMap valMap)
+        return $ unionAxisMap indices emptyIndices
+  let defaultMap val  = HM.fromList . map (,val) . HS.toList
+  filledStart <- checkAndFillInAxes "start" start $ (defaultMap 0 axes)
+  filledEnd <- checkAndFillInAxes "end" end $ asHashMap (tensorShape t)
+  filledStrides <- checkAndFillInAxes "strides" strides $ (defaultMap 1 axes)
+
+  assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap filledStart
   -- The original Rosette implementation may be buggy here.
   assert "end must be greater or equal to start" $
     symAnd $
-      zipWith (.>=) (HM.elems $ asHashMap end) (HM.elems $ asHashMap start)
-  assert "strides must be positive" $ symAll (.> 0) $ asHashMap strides
+      zipWith (.>=) (HM.elems $ asHashMap filledEnd) (HM.elems $ asHashMap filledStart)
+  assert "strides must be positive" $ symAll (.> 0) $ asHashMap filledStrides
   assert "end must be in the range of the dimension" $
     symAnd $
-      HM.mapWithKey
-        (\k e -> e .<= getAxis k (tensorShape t))
-        (asHashMap end)
+      zipWith (.<=) (HM.elems $ asHashMap filledEnd) (HM.elems $ asHashMap $ tensorShape t)
 
   outputShapeSliced <-
     safeDivAxisMap
-      (mapAxisMap (\x -> x - 1) $ addAxisMap (subAxisMap end start) strides)
-      strides
-  let outputShapeRemaining = removeAxes (allAxes start) $ tensorShape t
-  let newOutputShape =
-        castAxisMap outputShapeSliced `unionAxisMap` outputShapeRemaining
+      (mapAxisMap (\x -> x - 1) $ addAxisMap (subAxisMap filledEnd filledStart) filledStrides)
+      filledStrides
   mrgReturn $
     Tensor
       ( \indices -> do
           let slicedIndices =
-                addAxisMap start $
-                  mulAxisMap strides $
-                    restrictAxes (allAxes start) indices
-              remainingIndices = removeAxes (allAxes start) indices
-           in tensorAccess t $ unionAxisMap slicedIndices remainingIndices
+                addAxisMap filledStart $
+                  mulAxisMap filledStrides $
+                    restrictAxes (allAxes filledStart) indices
+           in tensorAccess t slicedIndices
       )
-      newOutputShape
+      (castAxisMap outputShapeSliced)
 
 data PaddingArgs = PaddingArgs
   { lowPad :: Sizes,
@@ -675,12 +676,6 @@ pad ::
 pad to v PaddingArgs {..} = do
   t <- tensor to
   let axes = tensorAllAxes t
-  assert "low must be subset of original axes" $
-    allAxes lowPad `HS.isSubsetOf` axes
-  assert "interior must be subset of original axes" $
-    allAxes interiorPad `HS.isSubsetOf` axes
-  assert "high must be subset of original axes" $
-    allAxes highPad `HS.isSubsetOf` axes
   let checkAndFillInAxes name pad = do
         assert (name <> " must be subset of original axes") $
           allAxes pad `HS.isSubsetOf` axes
