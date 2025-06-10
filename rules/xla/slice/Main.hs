@@ -355,46 +355,39 @@ rule12 _ = do
 rule13 :: forall a. AnyDTypeRule a
 rule13 _ = do
   -- TODO: Update with XLA implementation
-  rclass <- newRClass "rclass"
-  [rcSize, rcStartLhs, rcEndLhs, rcStride, rcStartRhs, rcEndRhs] <-
-    newMaps ["rcSize", "rcStartLhs", "rcEndLhs", "rcStride", "rcStartRhs", "rcEndRhs"] rclass
-  tA <- newTensor @a "A" [rclass --> rcSize]
+  [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
+  [rc0Size, rc0Start, rc0End, rc0Stride] <-
+    newMaps ["rc0Size", "rc0Start", "rc0End", "rc0Stride"] rclass0
+  [rc1Size, rc1Start, rc1End, rc1Stride] <-
+    newMaps ["rc1Size", "rc1Start", "rc1End", "rc1Stride"] rclass1
 
+  tA <- newTensor @a "A" [rclass0 --> rc0Size, rclass1 --> rc1Size]
   lhs <-
-    slice (reverseTensor tA [ByRClass rclass]) $
+    slice (reverseTensor tA [ByRClass rclass0]) $
       Slice
-        { start = [rclass --> rcStartLhs],
-          end = [rclass --> rcEndLhs],
-          strides = [rclass --> rcStride]
+        { start = [rclass0 --> rc0Start, rclass1 --> rc1Start],
+          end = [rclass0 --> rc0End, rclass1 --> rc1End],
+          strides = [rclass0 --> rc0Stride, rclass1 --> rc1Stride]
         }
 
-  let find_nth start end = divOr 0 (end - start)
-  let count start end stride =
-        symIte
-          (modOr 0 (end - start) stride .== 0)
-          (find_nth start end stride - 1)
-          (find_nth start end stride)
-  let new_start size start end stride = start + stride * count start end stride + 1 - size
-  let new_end size start end stride =
-        symIte
-          (size .>= new_start size start end stride + end - start)
-          (new_start size start end stride + end - start)
-          size
+  let find_nth start end = divOr 0 (end - start - 1)
+  let new_start size start end stride = (size - start) - (stride * find_nth start end stride + 1)
+  let new_end size start = size - start
 
   rcStartRhs <-
-    combineMap "rcStartRhs" (\[sz, s, e, p] -> new_start sz s e p) [rcSize, rcStartLhs, rcEndLhs, rcStride]
+    combineMap "rcStartRhs" (\[sz, s, e, p] -> new_start sz s e p) [rc0Size, rc0Start, rc0End, rc0Stride]
   rcEndRhs <-
-    combineMap "rcEndRhs" (\[sz, s, e, p] -> new_end sz s e p) [rcSize, rcStartLhs, rcEndLhs, rcStride]
+    combineMap "rcEndRhs" (\[sz, s] -> new_end sz s) [rc0Size, rc0Start]
   rhs <-
     reverseTensor
       ( slice tA $
           Slice
-            { start = [rclass --> rcStartRhs],
-              end = [rclass --> rcEndRhs],
-              strides = [rclass --> rcStride]
+            { start = [rclass0 --> rcStartRhs, rclass1 --> rc1Start],
+              end = [rclass0 --> rcEndRhs, rclass1 --> rc1End],
+              strides = [rclass0 --> rc0Stride, rclass1 --> rc1Stride]
             }
       )
-      [ByRClass rclass]
+      [ByRClass rclass0]
 
   rewrite "Slice(Reverse(A, dims), start, stride, end) ⇒ Reverse(Slice(A, ...), dims)" lhs rhs
 
@@ -425,4 +418,4 @@ main = do
   print "############################## rule12 ##############################"
   verifyAnyDTypeDSL rule12
   print "############################## rule13 ##############################"
-  verifyAnyDTypeDSLWith (withTimeout 10000000 z3) rule13
+  verifyAnyDTypeDSLWith cvc5 rule13
