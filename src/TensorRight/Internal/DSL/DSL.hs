@@ -737,14 +737,9 @@ sliceImpl expr' Slice {..} = do
     $ do
       shape <- shapeOf expr
       ty <- typeOf expr
-      assert "start must have the same RClasses as end" $ HM.keysSet ms == HM.keysSet me
-      assert "start must have the same RClasses as strides" $ HM.keysSet ms == HM.keysSet mp
       checkParamsWellFormed shape ms
       checkParamsWellFormed shape me
       checkParamsWellFormed shape mp
-      -- Check if the RClassRefs are in the tensor shape
-      -- We are allowed to slice a part of the rclasses
-      mapM_ (getRClassByRClassRef shape) $ HM.keys ms
       return (shape, ty)
 
 -- | The named arguments to the 'pad' operation.
