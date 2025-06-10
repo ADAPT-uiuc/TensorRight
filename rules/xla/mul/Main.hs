@@ -7,105 +7,105 @@ rule01 :: forall a. NumRule a
 rule01 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor <- constant @a 1 [rclass --> map]
-  lhs <- numBinOp Mul tensor constTensor
-  let rhs = tensor
-  rewrite "Mul(A,1) ⇒ A" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  one <- constant @a 1 [rclass --> map]
+  lhs <- numBinOp Mul tA one
+  let rhs = tA
+  rewrite "Mul(A, 1) ⇒ A" lhs rhs
 
 rule02 :: forall a. NumRule a
 rule02 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor <- constant @a 1 [rclass --> map]
-  lhs <- numBinOp Mul constTensor tensor
-  let rhs = tensor
-  rewrite "Mul(1,A) ⇒ A" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  one <- constant @a 1 [rclass --> map]
+  lhs <- numBinOp Mul one tA
+  let rhs = tA
+  rewrite "Mul(1, A) ⇒ A" lhs rhs
 
 rule03 :: forall a. NumRule a
 rule03 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor <- constant @a 0 [rclass --> map]
-  lhs <- numBinOp Mul tensor constTensor
-  let rhs = constTensor
-  rewrite "Mul(A,0) ⇒ 0" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  zero <- constant @a 0 [rclass --> map]
+  lhs <- numBinOp Mul tA zero
+  let rhs = zero
+  rewrite "Mul(A, 0) ⇒ 0" lhs rhs
 
 rule04 :: forall a. NumRule a
 rule04 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor <- constant @a 0 [rclass --> map]
-  lhs <- numBinOp Mul constTensor tensor
-  let rhs = constTensor
-  rewrite "Mul(0,A) ⇒ 0" lhs rhs
+  zero <- constant @a 0 [rclass --> map]
+  lhs <- numBinOp Mul zero tensor
+  let rhs = zero
+  rewrite "Mul(0, A) ⇒ 0" lhs rhs
 
 rule05 :: forall a. NumRule a
 rule05 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  t1 <- newTensor @a "t1" [rclass --> map]
-  t2 <- newTensor @a "t2" [rclass --> map]
-  constTensor1 <- constant @a "a" [rclass --> map]
-  constTensor2 <- constant @a "b" [rclass --> map]
-  lhs <- numBinOp Mul (numBinOp Mul t1 constTensor1) (numBinOp Mul t2 constTensor2)
-  rhs <- numBinOp Mul (numBinOp Mul t1 t2) (numBinOp Mul constTensor1 constTensor2)
-  rewrite "Mul(Mul(A, Const1), Mul(B, Const2)) ⇒ Mul(Mul(A, B),Mul(Const1,Const2))" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  tB <- newTensor @a "B" [rclass --> map]
+  c1 <- constant @a "c1" [rclass --> map]
+  c2 <- constant @a "c2" [rclass --> map]
+  lhs <- numBinOp Mul (numBinOp Mul tA c1) (numBinOp Mul tB c2)
+  rhs <- numBinOp Mul (numBinOp Mul tA tB) (numBinOp Mul c1 c2)
+  rewrite "Mul(Mul(A, Const1), Mul(B, Const2)) ⇒ Mul(Mul(A, B), Mul(Const1, Const2))" lhs rhs
 
 rule06 :: forall a. NumRule a
 rule06 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor1 <- constant @a "a" [rclass --> map]
-  constTensor2 <- constant @a "b" [rclass --> map]
-  lhs <- numBinOp Mul (numBinOp Mul tensor constTensor1) constTensor2
-  rhs <- numBinOp Mul tensor (numBinOp Mul constTensor1 constTensor2)
-  rewrite "Mul(Mul(A, Const1), Const2) ⇒ Mul(A, Mul(Const1,Const2))" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  c1 <- constant @a "c1" [rclass --> map]
+  c2 <- constant @a "c2" [rclass --> map]
+  lhs <- numBinOp Mul (numBinOp Mul tA c1) c2
+  rhs <- numBinOp Mul tA (numBinOp Mul c1 c2)
+  rewrite "Mul(Mul(A, Const1), Const2) ⇒ Mul(A, Mul(Const1, Const2))" lhs rhs
 
 rule07 :: forall a. NumRule a
 rule07 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
-  map0 <- newMap "map0" rclass0
-  map1 <- newMap "map1" rclass1
-  t1 <- newTensor @a "t1" [rclass0 --> map0, rclass1 --> map1]
-  t2 <- newTensor @a "t2" [rclass0 --> map0]
-  lhs <- numBinOp Mul (numBinOp Mul t1 (constant @a "a" [rclass0 --> map0, rclass1 --> map1])) (broadcast t2 [rclass1 --> map1])
-  rhs <- numBinOp Mul (broadcast (numBinOp Mul t2 (constant @a "a" [rclass0 --> map0])) [rclass1 --> map1]) t1
+  rc0Size <- newMap "rc0Size" rclass0
+  rc1Size <- newMap "rc1Size" rclass1
+  tA <- newTensor @a "A" [rclass0 --> rc0Size, rclass1 --> rc1Size]
+  tB <- newTensor @a "B" [rclass0 --> rc0Size]
+  lhs <- numBinOp Mul (numBinOp Mul tA (constant @a "a" [rclass0 --> rc0Size, rclass1 --> rc1Size])) (broadcast tB [rclass1 --> rc1Size])
+  rhs <- numBinOp Mul (broadcast (numBinOp Mul tB (constant @a "a" [rclass0 --> rc0Size])) [rclass1 --> rc1Size]) tA
   rewrite "Mul(Mul(A, Const1), Broadcast(B)) ⇒ Mul(Broadcast(Mul(B, Const1), A))" lhs rhs
 
 rule08 :: forall a. NumRule a
 rule08 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  t1 <- newTensor @a "t1" [rclass --> map]
-  t2 <- newTensor @a "t2" [rclass --> map]
-  t3 <- newTensor @a "t3" [rclass --> map]
-  lhs <- numBinOp Add (numBinOp Mul t1 t3) (numBinOp Mul t2 t3)
-  rhs <- numBinOp Mul (numBinOp Add t1 t2) t3
-  rewrite "Add(Mul(A,C),Mul(B,C)) ⇒ Mul(Add(A,B),C)" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  tB <- newTensor @a "B" [rclass --> map]
+  tC <- newTensor @a "C" [rclass --> map]
+  lhs <- numBinOp Add (numBinOp Mul tA tC) (numBinOp Mul tB tC)
+  rhs <- numBinOp Mul (numBinOp Add tA tB) tC
+  rewrite "Add(Mul(A, C), Mul(B, C)) ⇒ Mul(Add(A, B), C)" lhs rhs
 
 rule09 :: forall a. NumRule a
 rule09 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  lhs <- numBinOp Mul (numUnaryOp Abs tensor) (numUnaryOp Abs tensor)
-  rhs <- numBinOp Mul tensor tensor
-  rewrite "Mul(Abs(A),Abs(A)) ⇒ Mul(A,A)" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  lhs <- numBinOp Mul (numUnaryOp Abs tA) (numUnaryOp Abs tA)
+  rhs <- numBinOp Mul tA tA
+  rewrite "Mul(Abs(A), Abs(A)) ⇒ Mul(A, A)" lhs rhs
 
 rule10 :: DSLContext Rewrite
 rule10 = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  a <- newTensor @TensorReal "a" [rclass --> map]
-  b <- newTensor @TensorReal "b" [rclass --> map]
-  lhs <- numBinOp Mul (numUnaryOp Exp a) (numUnaryOp Exp b)
-  rhs <- numUnaryOp Exp (numBinOp Add a b)
-  rewrite "Mul(Exp(A),Exp(B)) ⇒ Exp(Add(A,B))" lhs rhs
+  tA <- newTensor @TensorReal "A" [rclass --> map]
+  tB <- newTensor @TensorReal "B" [rclass --> map]
+  lhs <- numBinOp Mul (numUnaryOp Exp tA) (numUnaryOp Exp tB)
+  rhs <- numUnaryOp Exp (numBinOp Add tA tB)
+  rewrite "Mul(Exp(A), Exp(B)) ⇒ Exp(Add(A, B))" lhs rhs
 
 main :: IO ()
 main = do

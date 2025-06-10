@@ -6,48 +6,65 @@ import TensorRight
 rule01 :: forall a. NumRule a
 rule01 _ = do
   rclass <- newRClass "rclass"
-  [sizeMap0, sizeMap1, startMap0] <- newMaps ["sizeMap0", "sizeMap1", "startMap0"] rclass
-  t1 <- newTensor @a "t1" [rclass --> sizeMap0]
-  t2 <- newTensor @a "t2" [rclass --> sizeMap1]
-  lhs <- numBinOp Add t1 (dynamicUpdateSlice (constant @a 0 [rclass --> sizeMap0]) t2 [rclass --> startMap0])
-  rhs <- dynamicUpdateSlice t1 (numBinOp Add t2 (dynamicSlice t1 DySlice {start = [rclass --> startMap0], sizes = [rclass --> sizeMap1]})) [rclass --> startMap0]
+  [rcSizeA, rcSizeB, rcStart] <- newMaps ["rcSizeA", "rcSizeB", "rcStart"] rclass
+  tA <- newTensor @a "A" [rclass --> rcSizeA]
+  tB <- newTensor @a "B" [rclass --> rcSizeB]
+  lhs <- numBinOp Add tA (dynamicUpdateSlice (constant @a 0 [rclass --> rcSizeA]) tB [rclass --> rcStart])
+  rhs <- dynamicUpdateSlice tA (numBinOp Add tB (dynamicSlice tA $
+    DySlice {
+      start = [rclass --> rcStart],
+      sizes = [rclass --> rcSizeB]}))
+    [rclass --> rcStart]
   rewrite "Add(A, DynamicUpdateSlice(Broadcast(0), B) ⇒ DynamicUpdateSlice(A,...)" lhs rhs
 
 rule02 :: forall a. AnyDTypeRule a
 rule02 _ = do
   rclass <- newRClass "rclass"
-  [origSizeMap, newSizeMap, startMap, lowMap, interiorMap, highMap] <- newMaps ["origSizeMap", "newSizeMap", "startMap", "lowMap", "interiorMap", "highMap"] rclass
-  tensor <- newTensor @a "tensor" [rclass --> origSizeMap]
-  lhs <- dynamicUpdateSlice (constant @a "a" [rclass --> newSizeMap]) tensor [rclass --> startMap]
-  rhs <- pad tensor ("a" :: a) [rclass --> lowMap] [rclass --> interiorMap] [rclass --> highMap]
-  precondition [lowMap, startMap] $ \[low, start] -> low .== start
-  precondition [interiorMap] $ \[interior] -> interior .== 0
-  precondition [lowMap, highMap, origSizeMap, newSizeMap] $
-    \[low, high, origSize, newSize] -> newSize .== origSize + low + high
+  [rcOrigSize, rcNewSize, rcStart] <- newMaps ["rcOrigSize", "rcNewSize", "rcStart"] rclass
+
+  tA <- newTensor @a "A" [rclass --> rcOrigSize]
+  lhs <- dynamicUpdateSlice (constant @a "a" [rclass --> rcNewSize]) tA [rclass --> rcStart]
+
+  rcInt <- newConstMap "rcInt" 0 rclass
+  rcHigh <- combineMap "rcHigh" (\[ns, os, s] -> ns - os - s) [rcNewSize, rcOrigSize, rcStart]
+  rhs <- pad tA ("a" :: a) $
+    Padding {
+      low = [rclass --> rcStart],
+      high = [rclass --> rcHigh],
+      interior = [rclass --> rcInt]
+    }
+
   rewrite "DynamicUpdateSlice(Broadcast(Const),A,...) ⇒ Pad(" lhs rhs
 
 rule03 :: forall a. AnyDTypeRule a
 rule03 _ = do
   rclass <- newRClass "rclass"
-  [sizeMap, startMap] <- newMaps ["sizeMap", "startMap"] rclass
-  t1 <- newTensor @a "t1" [rclass --> sizeMap]
-  t2 <- newTensor @a "t2" [rclass --> sizeMap]
-  lhs <- dynamicUpdateSlice t1 t2 [rclass --> startMap]
-  let rhs = t2
-  precondition [startMap] $ \[start] -> start .== 0
+  [rcSize, rcStart] <- newMaps ["rcSize", "rcStart"] rclass
+
+  tA <- newTensor @a "tA" [rclass --> rcSize]
+  tB <- newTensor @a "tB" [rclass --> rcSize]
+  lhs <- dynamicUpdateSlice tA tB [rclass --> rcStart]
+  precondition [rcSize] $ \[s] -> s .== 0
+
+  let rhs = tB
   rewrite "DynamicUpdateSlice(A, B, 0) ⇒ B" lhs rhs
 
 rule04 :: forall a. AnyDTypeRule a
 rule04 _ = do
   rclass <- newRClass "rclass"
-  [sizeMap0, sizeMap1, startMap0, sliceSizeMap0, startMap1, startMap2] <- newMaps ["sizeMap0", "sizeMap1", "startMap0", "sliceSizeMap0", "startMap1", "startMap2"] rclass
-  t1 <- newTensor @a "t1" [rclass --> sizeMap0]
-  t2 <- newTensor @a "t2" [rclass --> sizeMap1]
-  lhs <- dynamicUpdateSlice t1 (dynamicUpdateSlice (dynamicSlice t1 DySlice {start = [rclass --> startMap0], sizes = [rclass --> sliceSizeMap0]}) t2 [rclass --> startMap1]) [rclass --> startMap0]
-  rhs <- dynamicUpdateSlice t1 t2 [rclass --> startMap2]
-  precondition [startMap0, startMap1, startMap2] $
-    \[start0, start1, start2] -> start2 .== start0 + start1
-  rewrite "DynamicUpdateSlice(A, DynamicUpdateSlice(DynamicSlice(A,...), C ,...),...)) ⇒ DynamicUpdateSlice(A,C,...)" lhs rhs
+  [rcSizeA, rcSizeB, rcStart0, rcLength, rcStart1] <- newMaps ["rcSizeA", "rcSizeB", "startMap0", "sliceSizeMap0", "startMap1"] rclass
+
+  tA <- newTensor @a "A" [rclass --> rcSizeA]
+  tB <- newTensor @a "B" [rclass --> rcSizeB]
+  lhs <- dynamicUpdateSlice tA (dynamicUpdateSlice (dynamicSlice tA $
+    DySlice {
+      start = [rclass --> rcStart0],
+      sizes = [rclass --> rcLength]
+    }) tB [rclass --> rcStart1]) [rclass --> rcStart0]
+
+  rcStart2 <- combineMap "rcStart2" sum [rcStart0, rcStart1]
+  rhs <- dynamicUpdateSlice tA tB [rclass --> rcStart2]
+  rewrite "DynamicUpdateSlice(A, DynamicUpdateSlice(DynamicSlice(A, ...), B, ...), ...)) ⇒ DynamicUpdateSlice(A, B, ...)" lhs rhs
 
 main :: IO ()
 main = do

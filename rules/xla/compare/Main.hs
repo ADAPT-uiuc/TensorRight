@@ -8,8 +8,8 @@ constructRule :: forall a. T.Text -> CompareOp -> Bool -> NumRule a
 constructRule name op value _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  lhs <- compareOp op tensor tensor
+  tA <- newTensor @a "A" [rclass --> map]
+  lhs <- compareOp op tA tA
   rhs <- constant @SymBool (con value) [rclass --> map]
   rewrite name lhs rhs
 

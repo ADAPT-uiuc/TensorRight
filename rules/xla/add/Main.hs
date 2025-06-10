@@ -7,42 +7,42 @@ rule01 :: forall a. NumRule a
 rule01 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor1 <- constant @a "a" [rclass --> map]
-  constTensor2 <- constant @a "b" [rclass --> map]
-  lhs <- numBinOp Add (numBinOp Add tensor constTensor1) constTensor2
-  rhs <- numBinOp Add tensor (numBinOp Add constTensor1 constTensor2)
-  rewrite "Add(Add(A,Const), Const2) ⇒ Add(A,Add(Const,Const2))" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  c1 <- constant @a "c1" [rclass --> map]
+  c2 <- constant @a "c2" [rclass --> map]
+  lhs <- numBinOp Add (numBinOp Add tA c1) c2
+  rhs <- numBinOp Add tA (numBinOp Add c1 c2)
+  rewrite "Add(Add(A, c1), c2) ⇒ Add(A, Add(c1, c2))" lhs rhs
 
 rule02 :: forall a. NumRule a
 rule02 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor <- constant @a 0 [rclass --> map]
-  lhs <- numBinOp Add tensor constTensor
-  let rhs = tensor
-  rewrite "Add(A,0) ⇒ A" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  zeroTensor <- constant @a 0 [rclass --> map]
+  lhs <- numBinOp Add tA zeroTensor
+  let rhs = tA
+  rewrite "Add(A, 0) ⇒ A" lhs rhs
 
 rule03 :: forall a. NumRule a
 rule03 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  tensor <- newTensor @a "tensor" [rclass --> map]
-  constTensor <- constant @a 0 [rclass --> map]
-  lhs <- numBinOp Add constTensor tensor
-  let rhs = tensor
-  rewrite "Add(0,A) ⇒ A" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  zeroTensor <- constant @a 0 [rclass --> map]
+  lhs <- numBinOp Add zeroTensor tA
+  let rhs = tA
+  rewrite "Add(0, A) ⇒ A" lhs rhs
 
 rule04 :: forall a. NumRule a
 rule04 _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
-  t1 <- newTensor @a "t1" [rclass --> map]
-  t2 <- constant @a "a" [rclass --> map]
-  lhs <- numBinOp Add t1 t2
-  rhs <- numBinOp Add t2 t1
-  rewrite "Add(Const,A) ⇒ Add(A,Const)" lhs rhs
+  tA <- newTensor @a "A" [rclass --> map]
+  c <- constant @a "c" [rclass --> map]
+  lhs <- numBinOp Add c tA
+  rhs <- numBinOp Add tA c
+  rewrite "Add(Const, A) ⇒ Add(A, Const)" lhs rhs
 
 main :: IO ()
 main = do
