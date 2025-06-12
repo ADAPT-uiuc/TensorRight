@@ -100,20 +100,25 @@ ruleDyUpSliceSlice _ = do
   rcStrideRhs <- newConstMap "rcStrideRhs" 2 rclass
   rcOffset <- newConstMap "rcOffset" 1 rclass
   rcEndLhs <- combineMap "rcEndLhs" (\[s] -> divOr 0 (s + 1) 2) [rcSize]
-  rcUpdateSize <- combineMap "rcUpdateSize" (\[e, o] -> e - o) [rcEndLhs, rcOffset]
+  rcUpdateSize <-
+    combineMap "rcUpdateSize" (\[e, o] -> e - o) [rcEndLhs, rcOffset]
   tX <- newTensor @a "X" [rclass --> rcSize]
-  lhsSlice <- slice tX $ Slice
-    { start = [rclass --> rcStart],
-      end = [rclass --> rcEndLhs],
-      strides = [rclass --> rcStrideLhs]
-    }
+  lhsSlice <-
+    slice tX $
+      Slice
+        { start = [rclass --> rcStart],
+          end = [rclass --> rcEndLhs],
+          strides = [rclass --> rcStrideLhs]
+        }
   updateTensor <- constant @a ("a" :: a) [rclass --> rcUpdateSize]
   lhs <- dynamicUpdateSlice lhsSlice updateTensor [rclass --> rcOffset]
-  rhsSlice <- slice tX $ Slice
-    { start = [rclass --> rcStart],
-      end = [rclass --> rcSize],
-      strides = [rclass --> rcStrideRhs]
-    }
+  rhsSlice <-
+    slice tX $
+      Slice
+        { start = [rclass --> rcStart],
+          end = [rclass --> rcSize],
+          strides = [rclass --> rcStrideRhs]
+        }
   rhs <- dynamicUpdateSlice rhsSlice updateTensor [rclass --> rcOffset]
   rewrite "TensorRight Motivating Example" lhs rhs
 

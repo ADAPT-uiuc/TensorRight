@@ -6,34 +6,30 @@ import TensorRight
 rule01 :: forall a. NumRule a
 rule01 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
-  [rclass0size, rclass0exsize, rclass0lhssi, rclass0rhssi] <-
-    newMaps ["rclass0size", "rclass0exsize", "rclass0lhssi", "rclass0rhssi"] rclass0
-  [rclass1size, rclass1exsize, rclass1lhssi, rclass1rhssi] <-
-    newMaps ["rclass1size", "rclass1exsize", "rclass1lhssi", "rclass1rhssi"] rclass1
-  tensor0 <- newTensor @a "tensor0" [rclass0 --> rclass0size]
-  tensor1 <- newTensor @a "tensor1" [rclass1 --> rclass1size]
+  [rc0Size, rc0LhsSi, rc0RhsSi] <-
+    newMaps ["rclass0size", "rc0LhsSi", "rc0RhsSi"] rclass0
+  [rc1Size, rc1LhsSi, rc1RhsSi] <-
+    newMaps ["rclass1size", "rc1LhsSi", "rc1RhsSi"] rclass1
+  tX <- newTensor @a "X" [rclass0 --> rc0Size]
+  tY <- newTensor @a "Y" [rclass1 --> rc1Size]
   lhs <-
     numBinOp
       Mul
-      (reduce tensor0 [rclass0 --> rclass0lhssi])
-      (reduce tensor1 [rclass1 --> rclass1lhssi])
+      (reduce tX [rclass0 --> rc0LhsSi])
+      (reduce tY [rclass1 --> rc1LhsSi])
   rhs <-
     reduce
       ( numBinOp
           Mul
-          (broadcast tensor0 [rclass1 --> rclass1exsize])
-          (broadcast tensor1 [rclass0 --> rclass0exsize])
+          (broadcast tX [rclass1 --> rc1Size])
+          (broadcast tY [rclass0 --> rc0Size])
       )
-      [rclass0 --> rclass0rhssi, rclass1 --> rclass1rhssi]
-  precondition [rclass0size, rclass0exsize] $
-    \[rclass0size, rclass0exsize] -> rclass0size .== rclass0exsize
-  precondition [rclass1size, rclass1exsize] $
-    \[rclass1size, rclass1exsize] -> rclass1size .== rclass1exsize
-  siRelation [rclass0lhssi, rclass0rhssi] $
-    \[rclass0lhssi, rclass0rhssi] -> rclass0lhssi .== rclass0rhssi
-  siRelation [rclass1lhssi, rclass1rhssi] $
-    \[rclass1lhssi, rclass1rhssi] -> rclass1lhssi .== rclass1rhssi
-  checkSIMap [rclass0lhssi, rclass1lhssi] [rclass0rhssi, rclass1rhssi]
+      [rclass0 --> rc0RhsSi, rclass1 --> rc1RhsSi]
+  siRelation [rc0LhsSi, rc0RhsSi] $
+    \[l, r] -> l .== r
+  siRelation [rc1LhsSi, rc1RhsSi] $
+    \[l, r] -> l .== r
+  checkSIMap [rc0LhsSi, rc1LhsSi] [rc0RhsSi, rc1RhsSi]
   rewrite
     "Mul(Reduce(X), Reduce(Y)) ⇒ Reduce(Mul(Broadcast(X), Broadcast(Y)))"
     lhs
@@ -48,23 +44,23 @@ rule02 _ = do
   [otherSize] <- newMaps ["otherSize"] otherRClass
   [lhsSIInnerX, lhsSIInnerY, lhsSIOuter, rhsSI] <-
     newMaps ["lhsSIInnerX", "lhsSIInnerY", "lhsSIOuter", "rhsSI"] concatRClass
-  x <- newTensor @a "x" [concatRClass --> concatSize0, otherRClass --> otherSize]
-  y <- newTensor @a "y" [concatRClass --> concatSize1, otherRClass --> otherSize]
+  tX <- newTensor @a "X" [concatRClass --> concatSize0, otherRClass --> otherSize]
+  tY <- newTensor @a "Y" [concatRClass --> concatSize1, otherRClass --> otherSize]
   lhs <-
     reduce
       ( concatTensor
           ( broadcast
-              (reduce x [concatRClass --> lhsSIInnerX])
+              (reduce tX [concatRClass --> lhsSIInnerX])
               [concatRClass --> singletonConcat]
           )
           ( broadcast
-              (reduce y [concatRClass --> lhsSIInnerY])
+              (reduce tY [concatRClass --> lhsSIInnerY])
               [concatRClass --> singletonConcat]
           )
           (ByRClass concatRClass)
       )
       [concatRClass --> lhsSIOuter]
-  rhs <- reduce (concatTensor x y (ByRClass concatRClass)) [concatRClass --> rhsSI]
+  rhs <- reduce (concatTensor tX tY (ByRClass concatRClass)) [concatRClass --> rhsSI]
   monitorMapOnFailure "concatSize0" (ByRClass concatRClass) concatSize0
   monitorMapOnFailure "concatSize1" (ByRClass concatRClass) concatSize1
   monitorMapOnFailure "lhsSIInnerX" (ByRClass concatRClass) lhsSIInnerX
@@ -81,7 +77,7 @@ rule02 _ = do
           (lhsSIInnerX .== rhsSI)
           (concatSize0 + lhsSIInnerY .== rhsSI)
   checkSIMap [lhsSIInnerX, lhsSIInnerY, lhsSIOuter] [rhsSI]
-  rewrite "Reduce(Concat(Reduce(X),Reduce(Y))) ⇒ Reduce(Concat(X,Y))" lhs rhs
+  rewrite "Reduce(Concat(Reduce(X), Reduce(Y))) ⇒ Reduce(Concat(X,Y))" lhs rhs
 
 rule03 :: forall a. NumRule a
 rule03 _ = do
@@ -144,51 +140,51 @@ rule04 _ = do
 rule05 :: forall a. NumRule a
 rule05 _ = do
   [rclass0, rclass1, rclass2] <- newRClasses ["rclass0", "rclass1", "rclass2"]
-  [rclass0size, rclass0lsi, rclass0rsi] <-
-    newMaps ["rclass0size", "rclass0lsi", "rclass0rsi"] rclass0
-  [rclass1size, rclass1lsi, rclass1rsi] <-
-    newMaps ["rclass1size", "rclass1lsi", "rclass1rsi"] rclass1
-  rclass2size <- newMap "rclass2size" rclass2
-  x <-
+  [rc0Size, rc0LhsSi, rc0RhsSi] <-
+    newMaps ["rc0Size", "rc0LhsSi", "rc0RhsSi"] rclass0
+  [rc1Size, rc1LhsSi, rc1RhsSi] <-
+    newMaps ["rc1Size", "rc1LhsSi", "rc1RhsSi"] rclass1
+  rc2Size <- newMap "rc2Size" rclass2
+  tX <-
     newTensor @a
-      "x"
-      [rclass0 --> rclass0size, rclass1 --> rclass1size, rclass2 --> rclass2size]
-  lhs <- reduce (reduce x [rclass0 --> rclass0lsi]) [rclass1 --> rclass1lsi]
-  rhs <- reduce x [rclass0 --> rclass0rsi, rclass1 --> rclass1rsi]
-  siRelation [rclass0lsi, rclass0rsi] $
-    \[rclass0lsi, rclass0rsi] -> rclass0lsi .== rclass0rsi
-  siRelation [rclass1lsi, rclass1rsi] $
-    \[rclass1lsi, rclass1rsi] -> rclass1lsi .== rclass1rsi
-  checkSIMap [rclass0lsi, rclass1lsi] [rclass0rsi, rclass1rsi]
+      "X"
+      [rclass0 --> rc0Size, rclass1 --> rc1Size, rclass2 --> rc2Size]
+  lhs <- reduce (reduce tX [rclass0 --> rc0LhsSi]) [rclass1 --> rc1LhsSi]
+  rhs <- reduce tX [rclass0 --> rc0RhsSi, rclass1 --> rc1RhsSi]
+  siRelation [rc0LhsSi, rc0RhsSi] $
+    \[l, r] -> l .== r
+  siRelation [rc1LhsSi, rc1RhsSi] $
+    \[l, r] -> l .== r
+  checkSIMap [rc0LhsSi, rc1LhsSi] [rc0RhsSi, rc1RhsSi]
   rewrite "Reduce(Reduce(X)) ⇒ Reduce(X)" lhs rhs
 
 rule06 :: forall a. NumRule a
 rule06 _ = do
   [rclass0, rclass1, rclass2, rclass3] <- newRClasses ["rclass0", "rclass1", "rclass2", "rclass3"]
-  [rclass0size, rclass0lsi, rclass0rsi] <-
-    newMaps ["rclass0size", "rclass0lsi", "rclass0rsi"] rclass0
-  [rclass1size, rclass1lsi, rclass1rsi] <-
-    newMaps ["rclass1size", "rclass1lsi", "rclass1rsi"] rclass1
-  rclass2size <- newMap "rclass2size" rclass2
-  rclass3size <- newMap "rclass3size" rclass3
+  [rc0Size, rc0LhsSi, rc0RhsSi] <-
+    newMaps ["rc0Size", "rc0LhsSi", "rc0RhsSi"] rclass0
+  [rc1Size, rc1LhsSi, rc1RhsSi] <-
+    newMaps ["rc1Size", "rc1LhsSi", "rc1RhsSi"] rclass1
+  rc2Size <- newMap "rc2Size" rclass2
+  rc3Size <- newMap "rc3Size" rclass3
   x <-
     newTensor @a
       "x"
-      [rclass0 --> rclass0size, rclass1 --> rclass1size, rclass2 --> rclass2size]
+      [rclass0 --> rc0Size, rclass1 --> rc1Size, rclass2 --> rc2Size]
   y <-
     newTensor @a
       "y"
-      [rclass0 --> rclass0size, rclass1 --> rclass1size, rclass3 --> rclass3size]
+      [rclass0 --> rc0Size, rclass1 --> rc1Size, rclass3 --> rc3Size]
   lhs <-
     reduce
-      (dot x y [rclass0 --> rclass0lsi] [ByRClass rclass1])
-      [rclass1 --> rclass1lsi]
-  rhs <- dot x y [rclass0 --> rclass0rsi, rclass1 --> rclass1rsi] []
-  siRelation [rclass0lsi, rclass0rsi] $
-    \[rclass0lsi, rclass0rsi] -> rclass0lsi .== rclass0rsi
-  siRelation [rclass1lsi, rclass1rsi] $
-    \[rclass1lsi, rclass1rsi] -> rclass1lsi .== rclass1rsi
-  checkSIMap [rclass0lsi, rclass1lsi] [rclass0rsi, rclass1rsi]
+      (dot x y [rclass0 --> rc0LhsSi] [ByRClass rclass1])
+      [rclass1 --> rc1LhsSi]
+  rhs <- dot x y [rclass0 --> rc0RhsSi, rclass1 --> rc1RhsSi] []
+  siRelation [rc0LhsSi, rc0RhsSi] $
+    \[l, r] -> l .== r
+  siRelation [rc1LhsSi, rc1RhsSi] $
+    \[l, r] -> l .== r
+  checkSIMap [rc0LhsSi, rc1LhsSi] [rc0RhsSi, rc1RhsSi]
   rewrite "Reduce(Dot(X,Y)) ⇒ Dot(X,Y)" lhs rhs
 
 rule07 :: forall a. NumRule a

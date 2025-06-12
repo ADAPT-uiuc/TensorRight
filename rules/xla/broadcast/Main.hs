@@ -46,16 +46,22 @@ rule04 _ = do
 rule05 :: forall a. AnyDTypeRule a
 rule05 _ = do
   rclass <- newRClass "rclass"
-  [origSize, start, end, stride] <- newMaps ["origSize", "start", "end", "stride"] rclass
+  [origSize, start, end, stride] <-
+    newMaps ["origSize", "start", "end", "stride"] rclass
 
-  lhs <- slice (constant @a "a" [rclass --> origSize]) $
-    Slice {
-      start = [rclass --> start],
-      end = [rclass --> end],
-      strides = [rclass --> stride]
-    }
+  lhs <-
+    slice (constant @a "a" [rclass --> origSize]) $
+      Slice
+        { start = [rclass --> start],
+          end = [rclass --> end],
+          strides = [rclass --> stride]
+        }
 
-  newSize <- combineMap "newSize" (\[s, e, p] -> divOr 0 (e - s + p - 1) p) [start, end, stride]
+  newSize <-
+    combineMap
+      "newSize"
+      (\[s, e, p] -> divOr 0 (e - s + p - 1) p)
+      [start, end, stride]
   rhs <- constant @a "a" [rclass --> newSize]
   rewrite "Slice(Broadcast(Scalar)) ⇒ Broadcast(Scalar)" lhs rhs
 
@@ -63,11 +69,12 @@ rule06 :: forall a. AnyDTypeRule a
 rule06 _ = do
   rclass <- newRClass "rclass"
   [origSize, newSize, start] <- newMaps ["origSize", "newSize", "start"] rclass
-  lhs <- dynamicSlice (constant @a "a" [rclass --> origSize]) $
-    DySlice {
-      start = [rclass --> start],
-      sizes = [rclass --> newSize]
-    }
+  lhs <-
+    dynamicSlice (constant @a "a" [rclass --> origSize]) $
+      DySlice
+        { start = [rclass --> start],
+          sizes = [rclass --> newSize]
+        }
   rhs <- constant @a "a" [rclass --> newSize]
   rewrite "DynamicSlice(Broadcast(Scalar)) ⇒ Broadcast(Scalar)" lhs rhs
 
@@ -76,7 +83,10 @@ rule07 = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
   rc0Size <- newMap "rc0Size" rclass0
   rc1Size <- newMap "rc1Size" rclass1
-  lhs <- broadcast (iota [rclass0 --> rc0Size] (ByRClass rclass0)) [rclass1 --> rc1Size]
+  lhs <-
+    broadcast
+      (iota [rclass0 --> rc0Size] (ByRClass rclass0))
+      [rclass1 --> rc1Size]
   rhs <- iota [rclass0 --> rc0Size, rclass1 --> rc1Size] (ByRClass rclass0)
   rewrite "Broadcast(Iota) ⇒ Iota" lhs rhs
 

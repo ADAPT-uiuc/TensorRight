@@ -630,7 +630,7 @@ sliceStartEndStrides to SliceArgs {..} = do
         let emptyIndices =
               restrictAxes diffDims (fromHashMap valMap)
         return $ unionAxisMap indices emptyIndices
-  let defaultMap val  = HM.fromList . map (,val) . HS.toList
+  let defaultMap val = HM.fromList . map (,val) . HS.toList
   filledStart <- checkAndFillInAxes "start" start $ (defaultMap 0 axes)
   filledEnd <- checkAndFillInAxes "end" end $ asHashMap (tensorShape t)
   filledStrides <- checkAndFillInAxes "strides" strides $ (defaultMap 1 axes)
@@ -937,7 +937,9 @@ dynamicUpdateSlice to update start = do
     tensorAllAxes t == tensorAllAxes u
   assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap start
   assert "update sizes must be strictly positive" $
-    symAll (.> 0) $ asHashMap $ tensorShape u
+    symAll (.> 0) $
+      asHashMap $
+        tensorShape u
   assert "start + update must be in the range of the dimension" $
     symAnd $
       HM.mapWithKey

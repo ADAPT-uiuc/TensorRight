@@ -6,15 +6,17 @@ import TensorRight
 rule01 :: forall a. AnyDTypeRule a
 rule01 _ = do
   rclass <- newRClass "rclass"
-  [rcSize, rcLow, rcInt, rcHigh] <- newMaps ["rcSize", "rcLow", "rcInt", "rcHigh"] rclass
+  [rcSize, rcLow, rcInt, rcHigh] <-
+    newMaps ["rcSize", "rcLow", "rcInt", "rcHigh"] rclass
 
   tA <- newTensor @a "A" [rclass --> rcSize]
-  lhs <- pad tA ("a" :: a) $
-    Padding {
-      low = [rclass --> rcLow],
-      high = [rclass --> rcHigh],
-      interior = [rclass --> rcInt]
-    }
+  lhs <-
+    pad tA ("a" :: a) $
+      Padding
+        { low = [rclass --> rcLow],
+          high = [rclass --> rcHigh],
+          interior = [rclass --> rcInt]
+        }
   precondition [rcLow] $ \[l] -> l .== 0
   precondition [rcInt] $ \[i] -> i .== 0
   precondition [rcHigh] $ \[h] -> h .== 0
@@ -25,34 +27,41 @@ rule01 _ = do
 rule02 :: forall a. AnyDTypeRule a
 rule02 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
-  [rc0Size, rc0Low, rc0Int, rc0High] <- newMaps ["rc0Size", "rc0Low", "rc0Int", "rc0High"] rclass0
-  [rc1Size, rc1Low, rc1Int, rc1High] <- newMaps ["rc1Size", "rc1Low", "rc1Int", "rc1High"] rclass1
+  [rc0Size, rc0Low, rc0Int, rc0High] <-
+    newMaps ["rc0Size", "rc0Low", "rc0Int", "rc0High"] rclass0
+  [rc1Size, rc1Low, rc1Int, rc1High] <-
+    newMaps ["rc1Size", "rc1Low", "rc1Int", "rc1High"] rclass1
 
   tA <- newTensor @a "A" [rclass0 --> rc0Size, rclass1 --> rc1Size]
-  lhs <- pad tA ("a" :: a) $
-    Padding {
-      low = [rclass0 --> rc0Low, rclass1 --> rc1Low],
-      high = [rclass0 --> rc0High, rclass1 --> rc1High],
-      interior = [rclass0 --> rc0Int, rclass1 --> rc1Int]
-    }
+  lhs <-
+    pad tA ("a" :: a) $
+      Padding
+        { low = [rclass0 --> rc0Low, rclass1 --> rc1Low],
+          high = [rclass0 --> rc0High, rclass1 --> rc1High],
+          interior = [rclass0 --> rc0Int, rclass1 --> rc1Int]
+        }
   precondition [rc1Size] $ \[size1] -> size1 .== 1
 
   rc1NewInt <- newConstMap "rc1NewInt" 0 rclass1
-  rhs <- pad tA ("a" :: a) $
-    Padding {
-      low = [rclass0 --> rc0Low, rclass1 --> rc1Low],
-      high = [rclass0 --> rc0High, rclass1 --> rc1High],
-      interior = [rclass0 --> rc0Int, rclass1 --> rc1NewInt]
-    }
+  rhs <-
+    pad tA ("a" :: a) $
+      Padding
+        { low = [rclass0 --> rc0Low, rclass1 --> rc1Low],
+          high = [rclass0 --> rc0High, rclass1 --> rc1High],
+          interior = [rclass0 --> rc0Int, rclass1 --> rc1NewInt]
+        }
 
   rewrite "Pad(A, val, low_int_high) ⇒ Pad(A, val, low_0_high)" lhs rhs
 
 rule03 :: forall a. AnyDTypeRule a
 rule03 _ = do
   [rclass0, rclass1, rclass2] <- newRClasses ["rclass0", "rclass1", "rclass2"]
-  [rc0Size, rc0Low, rc0High, rc0Int] <- newMaps ["rc0Size", "rc0Low", "rc0High", "rc0Int"] rclass0
-  [rc1Size, rc1Low, rc1High, rc1Int] <- newMaps ["rc1Size", "rc1Low", "rc1High", "rc1Int"] rclass1
-  [rc2Size, rc2Low, rc2High, rc2Int] <- newMaps ["rc2Size", "rc2Low", "rc2high", "rc2Int"] rclass2
+  [rc0Size, rc0Low, rc0High, rc0Int] <-
+    newMaps ["rc0Size", "rc0Low", "rc0High", "rc0Int"] rclass0
+  [rc1Size, rc1Low, rc1High, rc1Int] <-
+    newMaps ["rc1Size", "rc1Low", "rc1High", "rc1Int"] rclass1
+  [rc2Size, rc2Low, rc2High, rc2Int] <-
+    newMaps ["rc2Size", "rc2Low", "rc2high", "rc2Int"] rclass2
 
   tA <- newTensor @a "A" [rclass0 --> rc0Size]
 
@@ -86,24 +95,47 @@ rule04 _ = do
   -- rclass1: positive low, negative high
   -- rclass2: negative low, positive high
   -- rclass3: negative low, negative high
-  [rclass0, rclass1, rclass2, rclass3] <- newRClasses ["rclass0", "rclass1", "rclass2", "rclass3"]
-  [rc0Size, rc0Low, rc0High, rc0Int] <- newMaps ["rc0Size", "rc0Low", "rc0High", "rc0Int"] rclass0
-  [rc1Size, rc1Low, rc1High, rc1Int] <- newMaps ["rc1Size", "rc1Low", "rc1High", "rc1Int"] rclass1
-  [rc2Size, rc2Low, rc2High, rc2Int] <- newMaps ["rc2Size", "rc2Low", "rc2High", "rc2Int"] rclass2
-  [rc3Size, rc3Low, rc3High, rc3Int] <- newMaps ["rc3Size", "rc3Low", "rc3High", "rc3Int"] rclass3
+  [rclass0, rclass1, rclass2, rclass3] <-
+    newRClasses ["rclass0", "rclass1", "rclass2", "rclass3"]
+  [rc0Size, rc0Low, rc0High, rc0Int] <-
+    newMaps ["rc0Size", "rc0Low", "rc0High", "rc0Int"] rclass0
+  [rc1Size, rc1Low, rc1High, rc1Int] <-
+    newMaps ["rc1Size", "rc1Low", "rc1High", "rc1Int"] rclass1
+  [rc2Size, rc2Low, rc2High, rc2Int] <-
+    newMaps ["rc2Size", "rc2Low", "rc2High", "rc2Int"] rclass2
+  [rc3Size, rc3Low, rc3High, rc3Int] <-
+    newMaps ["rc3Size", "rc3Low", "rc3High", "rc3Int"] rclass3
 
-  tA <- newTensor @a "A"
-          [rclass0 --> rc0Size,
-           rclass1 --> rc1Size,
-           rclass2 --> rc2Size,
-           rclass3 --> rc3Size]
+  tA <-
+    newTensor @a
+      "A"
+      [ rclass0 --> rc0Size,
+        rclass1 --> rc1Size,
+        rclass2 --> rc2Size,
+        rclass3 --> rc3Size
+      ]
 
   lhs <-
     pad tA ("a" :: a) $
       Padding
-        { low = [rclass0 --> rc0Low, rclass1 --> rc1Low, rclass2 --> rc2Low, rclass3 --> rc3Low],
-          interior = [rclass0 --> rc0Int, rclass1 --> rc1Int, rclass2 --> rc2Int, rclass3 --> rc3Int],
-          high = [rclass0 --> rc0High, rclass1 --> rc1High, rclass2 --> rc2High, rclass3 --> rc3High]
+        { low =
+            [ rclass0 --> rc0Low,
+              rclass1 --> rc1Low,
+              rclass2 --> rc2Low,
+              rclass3 --> rc3Low
+            ],
+          interior =
+            [ rclass0 --> rc0Int,
+              rclass1 --> rc1Int,
+              rclass2 --> rc2Int,
+              rclass3 --> rc3Int
+            ],
+          high =
+            [ rclass0 --> rc0High,
+              rclass1 --> rc1High,
+              rclass2 --> rc2High,
+              rclass3 --> rc3High
+            ]
         }
   precondition [rc0Int] $ \[i] -> i .== 0
   precondition [rc1Int] $ \[i] -> i .== 0
@@ -118,7 +150,8 @@ rule04 _ = do
   precondition [rc3Low] $ \[l] -> l .< 0
   precondition [rc3High] $ \[h] -> h .< 0
 
-  rc1End <- combineMap "rc1End" (\[s, l, h] -> s + l + h) [rc1Size, rc1Low, rc1High]
+  rc1End <-
+    combineMap "rc1End" (\[s, l, h] -> s + l + h) [rc1Size, rc1Low, rc1High]
   rc2Start <- combineMap "rc2Start" (\[x] -> abs x) [rc2Low]
   rc3Start <- combineMap "rc3Start" (\[x] -> abs x) [rc3Low]
   rc3End <- combineMap "rc3End" sum [rc3Size, rc3High]

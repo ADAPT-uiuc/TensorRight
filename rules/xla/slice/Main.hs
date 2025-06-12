@@ -27,14 +27,16 @@ rule01 _ = do
 rule02 :: forall a. AnyDTypeRule a
 rule02 _ = do
   rclass <- newRClass "rclass"
-  [rcSize, rcStart, rcEnd, rcStride] <- newMaps ["rcSize", "rcStart", "rcEnd", "rcStride"] rclass
+  [rcSize, rcStart, rcEnd, rcStride] <-
+    newMaps ["rcSize", "rcStart", "rcEnd", "rcStride"] rclass
 
-  lhs <- slice (constant @a "a" [rclass --> rcSize]) $
-    Slice {
-      start = [rclass --> rcStart],
-      end = [rclass --> rcEnd],
-      strides = [rclass --> rcStride]
-    }
+  lhs <-
+    slice (constant @a "a" [rclass --> rcSize]) $
+      Slice
+        { start = [rclass --> rcStart],
+          end = [rclass --> rcEnd],
+          strides = [rclass --> rcStride]
+        }
 
   rcNewSize <- combineMap "rcNewSize" (\[s, e, p] -> divOr 0 (e - s + p - 1) p) [rcStart, rcEnd, rcStride]
   rhs <- constant @a "a" [rclass --> rcNewSize]
@@ -43,24 +45,31 @@ rule02 _ = do
 rule03 :: forall a. AnyDTypeRule a
 rule03 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
-  [rc0Size, rc0Start, rc0End, rc0Stride] <- newMaps ["rc0Size", "rc0Start", "rc0End", "rc0Stride"] rclass0
-  [rc1Size, rc1Start, rc1End, rc1Stride] <- newMaps ["rc1Size", "rc1Start", "rc1End", "rc1Stride"] rclass1
+  [rc0Size, rc0Start, rc0End, rc0Stride] <-
+    newMaps ["rc0Size", "rc0Start", "rc0End", "rc0Stride"] rclass0
+  [rc1Size, rc1Start, rc1End, rc1Stride] <-
+    newMaps ["rc1Size", "rc1Start", "rc1End", "rc1Stride"] rclass1
 
   tA <- newTensor @a "A" [rclass0 --> rc0Size]
-  lhs <- slice (broadcast tA [rclass1 --> rc1Size]) $
-    Slice {
-      start = [rclass0 --> rc0Start, rclass1 --> rc1Start],
-      end = [rclass0 --> rc0End, rclass1 --> rc1End],
-      strides = [rclass0 --> rc0Stride, rclass1 --> rc1Stride]
-    }
+  lhs <-
+    slice (broadcast tA [rclass1 --> rc1Size]) $
+      Slice
+        { start = [rclass0 --> rc0Start, rclass1 --> rc1Start],
+          end = [rclass0 --> rc0End, rclass1 --> rc1End],
+          strides = [rclass0 --> rc0Stride, rclass1 --> rc1Stride]
+        }
 
   rc1NewSize <- combineMap "rc1NewSize" (\[s, e, p] -> divOr 0 (e - s + p - 1) p) [rc1Start, rc1End, rc1Stride]
-  rhs <- broadcast (slice tA $
-    Slice {
-      start = [rclass0 --> rc0Start],
-      end = [rclass0 --> rc0End],
-      strides = [rclass0 --> rc0Stride]
-      }) [rclass1 --> rc1NewSize]
+  rhs <-
+    broadcast
+      ( slice tA $
+          Slice
+            { start = [rclass0 --> rc0Start],
+              end = [rclass0 --> rc0End],
+              strides = [rclass0 --> rc0Stride]
+            }
+      )
+      [rclass1 --> rc1NewSize]
 
   rewrite "Slice(Broadcast(A)) ⇒ Broadcast(Slice(A))" lhs rhs
 
@@ -71,7 +80,8 @@ rule04 _ = do
     newMaps ["rcStart", "rcEnd", "rcStride"] rclass
   -- TODO: Making `rcSize` a map instead of a non-negative map leads to a
   -- TIMEOUT
-  [rcSize, rcLow, rcHigh, rcInt] <- newNonNegMaps ["rcSize", "rcLow", "rcHigh", "rcInt"] rclass
+  [rcSize, rcLow, rcHigh, rcInt] <-
+    newNonNegMaps ["rcSize", "rcLow", "rcHigh", "rcInt"] rclass
   tA <- newTensor @a "A" [rclass --> rcSize]
 
   lhs <-
@@ -88,14 +98,14 @@ rule04 _ = do
           end = [rclass --> rcEnd],
           strides = [rclass --> rcStride]
         }
-  precondition [rcStart, rcLow] $ \[start, low] -> start .== low
-  precondition [rcStride, rcInt] $ \[stride, int] -> stride .== int + 1
+  precondition [rcStart, rcLow] $ \[s, l] -> s .== l
+  precondition [rcStride, rcInt] $ \[p, i] -> p .== i + 1
   precondition [rcSize, rcLow, rcInt, rcEnd] $
-    \[size, low, int, end] -> end .== size + low + (size - 1) * int
+    \[sz, l, i, e] -> e .== sz + l + (sz - 1) * i
   -- TODO: The following precondition is not required since it is already
   -- implied by `highMap` being non-negative. However, removing it leads to
   -- a TIMEOUT
-  precondition [rcHigh] $ \[high] -> high .>= 0
+  precondition [rcHigh] $ \[h] -> h .>= 0
 
   let rhs = tA
   rewrite "Slice(Pad(A)) ⇒ A" lhs rhs
@@ -154,7 +164,7 @@ rule06 _ = do
           end = [rclass --> rcEnd],
           strides = [rclass --> rcStride]
         }
-  precondition [rcStart, rcLow] $ \[start, low] -> start .>= low
+  precondition [rcStart, rcLow] $ \[s, l] -> s .>= l
   precondition [rcSize, rcEnd, rcLow, rcInt] $
     \[s, e, l, i] -> e .<= s + l + (s - 1) * i
 
@@ -172,9 +182,12 @@ rule06 _ = do
 rule07 :: forall a. AnyDTypeRule a
 rule07 _ = do
   rclass <- newRClass "rclass"
-  [rcSize, rcOuterEnd, rcInnerEnd] <- newMaps ["rcSize", "rcOuterEnd", "rcInnerEnd"] rclass
-  [rcOuterStart, rcInnerStart] <- newMaps ["rcOuterStart", "rcInnerStart"] rclass
-  [rcOuterStride, rcInnerStride] <- newMaps ["rcOuterStride", "rcInnerStride"] rclass
+  [rcSize, rcOuterEnd, rcInnerEnd] <-
+    newMaps ["rcSize", "rcOuterEnd", "rcInnerEnd"] rclass
+  [rcOuterStart, rcInnerStart] <-
+    newMaps ["rcOuterStart", "rcInnerStart"] rclass
+  [rcOuterStride, rcInnerStride] <-
+    newMaps ["rcOuterStride", "rcInnerStride"] rclass
 
   tA <- newTensor @a "A" [rclass --> rcSize]
 
@@ -210,8 +223,10 @@ rule07 _ = do
 rule08 :: forall a. AnyDTypeRule a
 rule08 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
-  [rc0SizeA, rc0SizeB, rc0Start, rc0End, rc0Stride] <- newMaps ["rc0SizeA", "rc0SizeB", "rc0Start", "rc0End", "rc0Stride"] rclass0
-  [rc1SizeA, rc1SizeB, rc1Start, rc1End, rc1Stride] <- newMaps ["rc1SizeA", "rc1SizeB", "rc1Start", "rc1End", "rc1Stride"] rclass1
+  [rc0SizeA, rc0SizeB, rc0Start, rc0End, rc0Stride] <-
+    newMaps ["rc0SizeA", "rc0SizeB", "rc0Start", "rc0End", "rc0Stride"] rclass0
+  [rc1SizeA, rc1SizeB, rc1Start, rc1End, rc1Stride] <-
+    newMaps ["rc1SizeA", "rc1SizeB", "rc1Start", "rc1End", "rc1Stride"] rclass1
   tA <- newTensor @a "A" [rclass0 --> rc0SizeA, rclass1 --> rc1SizeA]
   tB <- newTensor @a "B" [rclass0 --> rc0SizeB, rclass1 --> rc1SizeB]
 
@@ -261,7 +276,8 @@ rule09 _ = do
 rule10 :: forall a. AnyDTypeRule a
 rule10 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
-  [rc0SizeA, rc0SizeB, rc0Start, rc0End, rc0Stride] <- newMaps ["rc0SizeA", "rc0SizeB", "rc0Start", "rc0End", "rc0Stride"] rclass0
+  [rc0SizeA, rc0SizeB, rc0Start, rc0End, rc0Stride] <-
+    newMaps ["rc0SizeA", "rc0SizeB", "rc0Start", "rc0End", "rc0Stride"] rclass0
   [rc1Size, rc1Start, rc1End, rc1Stride] <-
     newMaps ["rc1Size", "rc1Start", "rc1End", "rc1Stride"] rclass1
 
@@ -275,7 +291,7 @@ rule10 _ = do
           strides = [rclass0 --> rc0Stride, rclass1 --> rc1Stride]
         }
   precondition [rc0SizeA, rc0End] $
-    \[sizeA, end] -> end .<= sizeA
+    \[sz, e] -> e .<= sz
 
   rhs <-
     slice tA $
@@ -354,7 +370,6 @@ rule12 _ = do
 
 rule13 :: forall a. AnyDTypeRule a
 rule13 _ = do
-  -- TODO: Update with XLA implementation
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
   [rc0Size, rc0Start, rc0End, rc0Stride] <-
     newMaps ["rc0Size", "rc0Start", "rc0End", "rc0Stride"] rclass0
@@ -370,9 +385,9 @@ rule13 _ = do
           strides = [rclass0 --> rc0Stride, rclass1 --> rc1Stride]
         }
 
-  let find_nth start end = divOr 0 (end - start - 1)
-  let new_start size start end stride = (size - start) - (stride * find_nth start end stride + 1)
-  let new_end size start = size - start
+  let find_nth s e = divOr 0 (e - s - 1)
+  let new_start sz s e p = (sz - s) - (p * find_nth s e p + 1)
+  let new_end sz s = sz - s
 
   rcStartRhs <-
     combineMap "rcStartRhs" (\[sz, s, e, p] -> new_start sz s e p) [rc0Size, rc0Start, rc0End, rc0Stride]

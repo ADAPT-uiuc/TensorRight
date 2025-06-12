@@ -31,7 +31,13 @@ rule03 _ = do
   rc0Size <- newMap "rc0Size" rclass0
   rc1Size <- newMap "rc1Size" rclass1
   rc2Size <- newMap "rc2Size" rclass2
-  tA <- newTensor @a "A" [rclass0 --> rc0Size, rclass1 --> rc1Size, rclass2 --> rc2Size]
+  tA <-
+    newTensor @a
+      "A"
+      [ rclass0 --> rc0Size,
+        rclass1 --> rc1Size,
+        rclass2 --> rc2Size
+      ]
   lhs <-
     reverseTensor
       (reverseTensor tA [ByRClass rclass0, ByRClass rclass1])
