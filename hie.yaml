@@ -165,5 +165,11 @@ cradle:
     - path: "./rules/taso/smul/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-smul"
 
+    - path: "./rules/taso/relu/Main.hs"
+      component: "tensor-right:exe:rules-taso-relu"
+
+    - path: "./rules/taso/relu/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-relu"
+
     - path: "./test"
       component: "tensor-right:test:spec"
