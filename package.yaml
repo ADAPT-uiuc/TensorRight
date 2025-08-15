@@ -189,6 +189,25 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  # TASO Executables
+  rules-taso-ewadd:
+    source-dirs: rules/taso/ewadd
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-ewmul:
+    source-dirs: rules/taso/ewmul
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-smul:
+    source-dirs: rules/taso/smul
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
   # Other Executables
   rules-debug:
     source-dirs: rules/debug
