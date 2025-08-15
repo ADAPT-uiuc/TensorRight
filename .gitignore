@@ -3,3 +3,4 @@ result.txt
 .stack-work/
 .envrc
 .direnv
+.vscode/
