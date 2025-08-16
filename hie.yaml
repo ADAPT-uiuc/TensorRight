@@ -171,5 +171,11 @@ cradle:
     - path: "./rules/taso/relu/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-relu"
 
+    - path: "./rules/taso/concat/Main.hs"
+      component: "tensor-right:exe:rules-taso-concat"
+
+    - path: "./rules/taso/concat/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-concat"
+
     - path: "./test"
       component: "tensor-right:test:spec"

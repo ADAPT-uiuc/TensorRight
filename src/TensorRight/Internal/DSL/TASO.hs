@@ -9,18 +9,21 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 module TensorRight.Internal.DSL.TASO
   ( ewadd,
     ewmul,
     smul,
     relu,
+    concat,
   )
 where
 
-import TensorRight (NumBinOp (Add, Mul), ToElem, posInf)
+import TensorRight (NumBinOp (Add, Mul), ToElem, concatTensor, posInf)
 import TensorRight.Internal.Core.Tensor (ToDType)
-import TensorRight.Internal.DSL.DSL (DSLContext, Expr, ExprInContext, ValidNum, clampScalar, numBinOp, numBinScalarOp)
+import TensorRight.Internal.DSL.DSL (DSLContext, Expr, ExprInContext, RClassRef, ValidNum, clampScalar, numBinOp, numBinScalarOp)
+import Prelude hiding (concat)
 
 -- | TASO's ewadd operator. The lhs and rhs must have the same shape and the type must be either 'IntType' or 'RealType'.
 ewadd ::
@@ -60,3 +63,15 @@ relu ::
   lhs ->
   DSLContext Expr
 relu e = clampScalar @a 0 e posInf
+
+-- | TASO's concat operator
+concat ::
+  (ExprInContext lhs, ExprInContext rhs) =>
+  -- | The aggregated-axis to concat on.
+  RClassRef ->
+  -- | The left-hand side tensor.
+  lhs ->
+  -- | The right-hand side tensor.
+  rhs ->
+  DSLContext Expr
+concat axis lhs' rhs' = concatTensor lhs' rhs' axis
