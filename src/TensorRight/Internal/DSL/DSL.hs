@@ -70,6 +70,10 @@ module TensorRight.Internal.DSL.DSL
     newConstMap,
     newConstMaps,
     combineMap,
+    transpose2D,
+    twoRefsOf,
+    twoSingletonRefsOf,
+    transpose2DSingleton,
     Padding (..),
     ConvConfig (..),
     ConvPadding (..),
@@ -205,6 +209,7 @@ import TensorRight.Internal.DSL.Shape
     restrictAbstractShape,
     toAbstractShape,
   )
+import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import TensorRight.Internal.Util.Error (assert)
 
 -- | Create an integer element from a tensor int.
@@ -1128,7 +1133,7 @@ relabel ::
   -- | The tensor to relabel.
   e ->
   -- | The relabel map. Should be @[rclass --> 'ByLabel' label]@ or
-  -- @['ByLabel' label -> 'ByLabel' label, ...]@.
+  -- @['ByLabel' label --> 'ByLabel' label, ...]@.
   [RelabelMapDesc] ->
   DSLContext Expr
 relabel expr' relabelMapDescs = do
@@ -1484,3 +1489,39 @@ checkSIMap lhs rhs = do
       { lhsSIMaps = HS.union lhsSet $ lhsSIMaps env,
         rhsSIMaps = HS.union rhsSet $ rhsSIMaps env
       }
+
+-- | Gets the two aggregated axes from a 2D tensor. Useful for 2D Transpose
+twoRefsOf :: Expr -> DSLContext (RClassRef, RClassRef)
+twoRefsOf e = do
+  shape <- shapeOf e
+  let refs = HS.toList $ abstractShapeAllRefs shape
+  if length refs == 2
+    then let [a, b] = refs in return (a, b)
+    else error $ "Expected exactly 2 refs, got " ++ show (length refs) ++ ": " ++ show refs
+
+-- | Helper function for transpose2D. Ignores singleton
+transpose2D :: (ExprInContext e) => e -> DSLContext Expr
+transpose2D e' = do
+  e <- liftInContext e'
+  (a, b) <- twoRefsOf e
+  relabel e [a --> b, b --> a]
+
+-- | Gets the two aggregated axes from a strictly-2D tensor where
+-- both underlying RClasses are singleton.
+twoSingletonRefsOf :: Expr -> DSLContext (RClassRef, RClassRef)
+twoSingletonRefsOf e = do
+  shape <- shapeOf e
+  (a, b) <- twoRefsOf e
+  ra <- getRClassByRClassRef shape a
+  rb <- getRClassByRClassRef shape b
+  env <- get
+  let singletons = singletonRClasses env
+  assert "transpose2D: both rclasses must be singleton" $ HS.member ra singletons && HS.member rb singletons
+  return (a, b)
+
+-- | Strict 2D transpose: only allowed when both axes are singleton.
+transpose2DSingleton :: (ExprInContext e) => e -> DSLContext Expr
+transpose2DSingleton e' = do
+  e <- liftInContext e'
+  (a, b) <- twoSingletonRefsOf e
+  relabel e [a --> b, b --> a]

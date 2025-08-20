@@ -258,16 +258,15 @@ instance Semigroup Result where
 printResult :: Maybe String -> Result -> IO ()
 printResult subTheory Result {..} =
   putStrLn $
-    "["
-      <> ( if isRight result
-             then "SUCCESS"
-             else "FAIL"
-         )
+    ( if isRight result
+        then "\ESC[32m" <> "[" <> "SUCCESS"
+        else "\ESC[31m" <> "[" <> "FAIL"
+    )
       <> maybe "" ("-" <>) subTheory
       <> "]: ["
       <> show elapsedTime
       <> "s] Verification "
-      <> (if isRight result then "succeeded" else "failed")
+      <> (if isRight result then "succeeded" <> "\ESC[0m" else "failed" <> "\ESC[0m")
       <> ( case result of
              Right () -> "."
              Left e -> " with error: " <> show e

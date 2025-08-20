@@ -17,13 +17,16 @@ module TensorRight.Internal.DSL.TASO
     smul,
     relu,
     concat,
+    transpose,
+    transposeSingleton,
   )
 where
 
 import TensorRight (NumBinOp (Add, Mul), ToElem, concatTensor, posInf)
 import TensorRight.Internal.Core.Tensor (ToDType)
-import TensorRight.Internal.DSL.DSL (DSLContext, Expr, ExprInContext, RClassRef, ValidNum, clampScalar, numBinOp, numBinScalarOp)
-import TensorRight.Internal.DSL.Parameters (ParamDesc)
+import TensorRight.Internal.DSL.DSL (DSLContext, Expr, ExprInContext, RClassRef, ValidNum, clampScalar, numBinOp, numBinScalarOp, transpose2D, transpose2DSingleton)
+-- import TensorRight.Internal.DSL.Expr (Expr (Pad))
+-- import TensorRight.Internal.DSL.Parameters (ParamDesc)
 import Prelude hiding (concat)
 
 -- | TASO's ewadd operator. The lhs and rhs must have the same shape and the type must be either 'IntType' or 'RealType'.
@@ -77,12 +80,26 @@ concat ::
   DSLContext Expr
 concat axis lhs' rhs' = concatTensor lhs' rhs' axis
 
--- -- | TASO's enlarge operator
+-- | TASO's transpose operator
+transpose ::
+  (ExprInContext e) =>
+  -- | The tensor to transpose
+  e ->
+  DSLContext Expr
+transpose = transpose2D
+
+transposeSingleton ::
+  (ExprInContext e) =>
+  -- | The tensor to transpose
+  e ->
+  DSLContext Expr
+transposeSingleton = transpose2DSingleton
+
+-- -- -- | TASO's enlarge operator
 -- enlarge ::
 --   (ExprInContext e, ToElem v, ToDType v) =>
 --   -- | The tensor to enlarge.
 --   e ->
 --   [ParamDesc] ->
 --   DSLContext Expr
-
--- enlarge e
+-- enlarge e descs = pad

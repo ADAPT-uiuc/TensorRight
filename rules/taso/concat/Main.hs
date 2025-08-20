@@ -8,9 +8,9 @@ import Prelude hiding (concat)
 desugarOneRole :: forall a. NumRule a -- Concate with only one rclass
 desugarOneRole _ = do
   r <- newRClass "r"
-  s <- newMap "s" r
-  a <- newTensor @a "A" [r --> s]
-  b <- newTensor @a "B" [r --> s]
+  [sa, sb] <- newMaps ["sa", "sb"] r
+  a <- newTensor @a "A" [r --> sa]
+  b <- newTensor @a "B" [r --> sb]
   let d = ByRClass r
   lhs <- concat d a b
   rhs <- concatTensor a b d
@@ -20,10 +20,10 @@ desugarMultiRole :: forall a. NumRule a -- Concatenate with multiple Rclasses
 desugarMultiRole _ = do
   [batch, cat, spatial] <- newRClasses ["batch", "cat", "spatial"]
   bS <- newMap "bS" batch
-  cS <- newMap "cS" cat
+  [cSa, cSb] <- newMaps ["cSa", "cSb"] cat
   sS <- newMap "sS" spatial
-  a <- newTensor @a "A" [batch --> bS, cat --> cS, spatial --> sS]
-  b <- newTensor @a "B" [batch --> bS, cat --> cS, spatial --> sS]
+  a <- newTensor @a "A" [batch --> bS, cat --> cSa, spatial --> sS]
+  b <- newTensor @a "B" [batch --> bS, cat --> cSb, spatial --> sS]
   let d = ByRClass cat
   lhs <- concat d a b
   rhs <- concatTensor a b d
@@ -32,9 +32,9 @@ desugarMultiRole _ = do
 desugarLabelledCopy :: forall a. NumRule a -- Concatenate with duplicate RClasses
 desugarLabelledCopy _ = do
   r <- newRClass "r"
-  [sL, sR] <- newMaps ["sL", "sR"] r
-  a <- newTensor @a "A" [r --> sL @@ "L", r --> sR @@ "R"]
-  b <- newTensor @a "B" [r --> sL @@ "L", r --> sR @@ "R"]
+  [sL, sRa, sRb] <- newMaps ["sL", "sRa", "sRb"] r
+  a <- newTensor @a "A" [r --> sL @@ "L", r --> sRa @@ "R"]
+  b <- newTensor @a "B" [r --> sL @@ "L", r --> sRb @@ "R"]
   let d = ByLabel "R"
   lhs <- concat d a b
   rhs <- concatTensor a b d
