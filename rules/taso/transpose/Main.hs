@@ -4,6 +4,7 @@ import Grisette hiding ((-->))
 import TensorRight
 import TensorRight.Internal.DSL.DSL (transpose2DSingleton, twoRefsOf, twoSingletonRefsOf)
 import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, relu, smul, transpose, transposeSingleton)
+import TensorRight.Internal.Util.Pretty (printTitle)
 import Prelude hiding (concat)
 
 -- ############################# (Rewrite rules not enforcing singleton) ############################
@@ -187,31 +188,31 @@ transposeSingletonConcat _ = do
 
 main :: IO ()
 main = do
-  print "######################## desugarTranspose ########################"
+  printTitle "######################## desugarTranspose ########################"
   verifyNumDSL desugarTranspose
-  print "######################## inverse #################################"
+  printTitle "######################## inverse #################################"
   verifyNumDSL inverse
-  print "######################## transposeEwadd ##########################"
+  printTitle "######################## transposeEwadd ##########################"
   verifyNumDSL transposeEwadd
-  print "######################## transposeEwmul ##########################"
+  printTitle "######################## transposeEwmul ##########################"
   verifyNumDSL transposeEwmul
-  print "######################## transposeSmul ###########################"
+  printTitle "######################## transposeSmul ###########################"
   verifyNumDSL transposeSmul
-  print "######################## transposeRelu ###########################"
+  printTitle "######################## transposeRelu ###########################"
   verifyNumDSL transposeRelu
-  print "######################## transposeConcat #########################"
+  printTitle "######################## transposeConcat #########################"
   verifyNumDSL transposeConcat
-  print "######################## desugarTransposeSingleton ###############"
+  printTitle "######################## desugarTransposeSingleton ###############"
   verifyNumDSL desugarTransposeSingleton
-  print "######################## inverseSingleton ########################"
+  printTitle "######################## inverseSingleton ########################"
   verifyNumDSL inverseSingleton
-  print "######################## transposeSingletonEwadd #################"
+  printTitle "######################## transposeSingletonEwadd #################"
   verifyNumDSL transposeSingletonEwadd
-  print "######################## transposeSingletonEwmul #################"
+  printTitle "######################## transposeSingletonEwmul #################"
   verifyNumDSL transposeSingletonEwmul
-  print "######################## transposeSingletonSmul ##################"
+  printTitle "######################## transposeSingletonSmul ##################"
   verifyNumDSL transposeSingletonSmul
-  print "######################## transposeSingletonRelu ##################"
+  printTitle "######################## transposeSingletonRelu ##################"
   verifyNumDSL transposeSingletonRelu
-  print "######################## transposeSingletonConcat ################"
+  printTitle "######################## transposeSingletonConcat ################"
   verifyNumDSL transposeSingletonConcat
