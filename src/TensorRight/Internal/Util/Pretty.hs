@@ -6,6 +6,7 @@ module TensorRight.Internal.Util.Pretty
     condEnclose,
     prettyWithConstructor,
     gprettyParen,
+    printTitle,
   )
 where
 
@@ -33,3 +34,6 @@ gprettyParen b = condEnclose b "(" ")"
 prettyWithConstructor :: Int -> Doc ann -> [Doc ann] -> Doc ann
 prettyWithConstructor n c l =
   group $ condEnclose (n > 10) "(" ")" $ align $ nest 2 $ vsep (c : l)
+
+printTitle :: String -> IO ()
+printTitle s = putStr $ "\ESC[34m" <> s <> "\ESC[0m"
