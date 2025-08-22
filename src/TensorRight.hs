@@ -524,6 +524,9 @@ module TensorRight
     nonInf,
     posInf,
     negInf,
+
+    -- * Utils
+    printTitle,
   )
 where
 
@@ -534,3 +537,4 @@ import TensorRight.Internal.DSL.DSL
 import TensorRight.Internal.DSL.Expr
 import TensorRight.Internal.DSL.Syntax
 import TensorRight.Internal.DSL.Verify
+import TensorRight.Internal.Util.Pretty

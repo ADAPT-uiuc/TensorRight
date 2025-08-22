@@ -115,21 +115,21 @@ geometry _ = do
 
 main :: IO ()
 main = do
-  print "######################## desugarOneRole ########################"
+  printTitle "######################## desugarOneRole ########################"
   verifyNumDSL desugarOneRole
-  print "######################## desugarMultiRole ######################"
+  printTitle "######################## desugarMultiRole ######################"
   verifyNumDSL desugarMultiRole
-  print "######################## desugarLabelledCopy ###################"
+  printTitle "######################## desugarLabelledCopy ###################"
   verifyNumDSL desugarLabelledCopy
-  print "######################## desugarConcatList #####################"
+  printTitle "######################## desugarConcatList #####################"
   verifyNumDSL desugarConcatList
-  print "######################## smulAssociativity #####################"
+  printTitle "######################## smulAssociativity #####################"
   verifyNumDSL smulAssociativity
-  print "######################## ewaddAssociativity ####################"
+  printTitle "######################## ewaddAssociativity ####################"
   verifyNumDSL ewaddAssociativity
-  print "######################## ewmulAssociativity ####################"
+  printTitle "######################## ewmulAssociativity ####################"
   verifyNumDSL ewmulAssociativity
-  print "######################## reluAssociativity ####################"
+  printTitle "######################## reluAssociativity ####################"
   verifyNumDSL reluAssociativity
-  print "######################## geometry #############################"
+  printTitle "######################## geometry #############################"
   verifyNumDSL geometry

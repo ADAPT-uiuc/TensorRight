@@ -4,7 +4,6 @@ import Grisette hiding ((-->))
 import TensorRight
 import TensorRight.Internal.DSL.DSL (transpose2DSingleton, twoRefsOf, twoSingletonRefsOf)
 import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, relu, smul, transpose, transposeSingleton)
-import TensorRight.Internal.Util.Pretty (printTitle)
 import Prelude hiding (concat)
 
 -- ############################# (Rewrite rules not enforcing singleton) ############################
