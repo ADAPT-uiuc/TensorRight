@@ -36,4 +36,4 @@ prettyWithConstructor n c l =
   group $ condEnclose (n > 10) "(" ")" $ align $ nest 2 $ vsep (c : l)
 
 printTitle :: String -> IO ()
-printTitle s = putStr $ "\ESC[34m" <> s <> "\ESC[0m"
+printTitle s = putStrLn $ "\ESC[34m" <> s <> "\ESC[0m"
