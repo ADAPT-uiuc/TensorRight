@@ -381,6 +381,12 @@ numBinOp op xo yo = do
           case (op, xElem, yElem) of
             (_, TensorElemVal xSym, TensorElemVal ySym) -> do
               mrgReturn $ TensorElemVal $ func xSym ySym
+            (Add, TensorElemSum xSym, TensorElemVal ySym) ->
+              mrgReturn $ TensorElemSum (xSym + ySym)
+            (Add, TensorElemVal xSym, TensorElemSum ySym) ->
+              mrgReturn $ TensorElemSum (xSym + ySym)
+            (Add, TensorElemSum xSym, TensorElemSum ySym) ->
+              mrgReturn $ TensorElemSum (xSym + ySym)
             (Mul, TensorElemSum xSym, TensorElemVal ySym) ->
               mrgReturn $ TensorElemSum (xSym * ySym)
             (Mul, TensorElemVal xSym, TensorElemSum ySym) ->

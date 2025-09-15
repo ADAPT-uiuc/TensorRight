@@ -189,5 +189,11 @@ cradle:
     - path: "./rules/taso/enlarge/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-enlarge"
 
+    - path: "./rules/taso/matmul/Main.hs"
+      component: "tensor-right:exe:rules-taso-matmul"
+
+    - path: "./rules/taso/matmul/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-matmul"
+
     - path: "./test"
       component: "tensor-right:test:spec"
