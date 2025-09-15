@@ -71,6 +71,8 @@ module TensorRight.Internal.DSL.DSL
     newConstMaps,
     combineMap,
     transpose2D,
+    matmul2DHelper,
+    matmul3DHelper,
     twoRefsOf,
     twoSingletonRefsOf,
     transpose2DSingleton,
@@ -1194,7 +1196,7 @@ dot lhs rhs contractingSIMapsDesc batchRClasses = do
     let lhsAllRefs = abstractShapeAllRefs shapeLhs
     let rhsAllRefs = abstractShapeAllRefs shapeRhs
     assert
-      ( "Contracion + batch rclasses must be exactly the interaction of lhs and "
+      ( "Contraction + batch rclasses must be exactly the interaction of lhs and "
           <> "rhs rclasses"
       )
       $ dotAllRefs == HS.intersection lhsAllRefs rhsAllRefs
@@ -1498,6 +1500,57 @@ twoRefsOf e = do
   if length refs == 2
     then let [a, b] = refs in return (a, b)
     else error $ "Expected exactly 2 refs, got " ++ show (length refs) ++ ": " ++ show refs
+
+-- | Helper function to get three aggregated axes from a 3D tensor.
+-- Useful for 3D batched matrix multiplication.
+threeRefsOf :: Expr -> DSLContext (RClassRef, RClassRef, RClassRef)
+threeRefsOf e = do
+  shape <- shapeOf e
+  let refs = HS.toList $ abstractShapeAllRefs shape
+  if length refs == 3
+    then let [a, b, c] = refs in return (a, b, c)
+    else error $ "Expected exactly 3 refs, got " ++ show (length refs) ++ ": " ++ show refs
+
+matmul2DHelper ::
+  (ExprInContext lhs, ExprInContext rhs) =>
+  -- | The left-hand side tensor (shape [M, K])
+  lhs ->
+  -- | The right-hand side tensor (shape [K, N])
+  rhs ->
+  DSLContext (Expr, MapIdentifier)
+matmul2DHelper lhs' rhs' = do
+  lhs <- liftInContext lhs'
+  rhs <- liftInContext rhs'
+  shapeLhs <- shapeOf lhs
+  shapeRhs <- shapeOf rhs
+  let shared = HS.toList $ abstractShapeAllRefs shapeLhs `HS.intersection` abstractShapeAllRefs shapeRhs
+  assert "matmul2D: tensors must share exactly one rclass" $ length shared == 1
+  let [kRef] = shared
+  kRClass <- getRClassByRClassRef shapeLhs kRef
+  kSI <- newMap "contract" kRClass
+  expr <- dot lhs rhs [kRef --> kSI] []
+  return (expr, kSI)
+
+matmul3DHelper ::
+  (ExprInContext lhs, ExprInContext rhs) =>
+  -- | The left-hand side tensor (shape [B, M, K])
+  lhs ->
+  -- | The right-hand side tensor (shape [B, K, N])
+  rhs ->
+  DSLContext Expr
+matmul3DHelper lhs' rhs' = do
+  lhs <- liftInContext lhs'
+  rhs <- liftInContext rhs'
+  -- Get the three axes from each tensor
+  (lhsBatch, _, lhsK) <- threeRefsOf lhs -- B, M, K
+  (_, _, _) <- threeRefsOf rhs -- B, K, N
+  -- Create contracting SI map for the shared K dimension
+  shapeLhs <- shapeOf lhs
+  rclassK <- getRClassByRClassRef shapeLhs lhsK
+  contractSI <- newMap "contractSI" rclassK
+  -- Contract on K dimension, batch on B dimension
+  -- lhsBatch should match rhsBatch, lhsK should match rhsK
+  dot lhs rhs [lhsK --> contractSI] [lhsBatch]
 
 -- | Helper function for transpose2D. Ignores singleton
 transpose2D :: (ExprInContext e) => e -> DSLContext Expr

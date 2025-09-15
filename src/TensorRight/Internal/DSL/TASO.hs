@@ -21,6 +21,7 @@ module TensorRight.Internal.DSL.TASO
     transpose,
     transposeSingleton,
     enlarge,
+    matmul2D,
   )
 where
 
@@ -36,6 +37,7 @@ import TensorRight.Internal.DSL.DSL
     ValidNum,
     clampScalar,
     combineMap,
+    matmul2DHelper,
     newConstMap,
     newNonNegMap,
     numBinOp,
@@ -46,6 +48,7 @@ import TensorRight.Internal.DSL.DSL
     transpose2DSingleton,
   )
 import TensorRight.Internal.DSL.Expr (getRClassByMap)
+import TensorRight.Internal.DSL.Identifier (MapIdentifier)
 import TensorRight.Internal.DSL.Parameters (ParamDesc (..))
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import Prelude hiding (concat)
@@ -164,3 +167,13 @@ enlarge (ParamDesc hRef sH) (ParamDesc wRef sW) ky kx e = do
         interior = [hRef --> zH, wRef --> zW], -- No internal padding
         high = [hRef --> hHigh, wRef --> wHigh]
       }
+
+-- | TASO's 2D matrix multiplication operator
+matmul2D ::
+  (ExprInContext lhs, ExprInContext rhs) =>
+  -- | The left-hand side tensor (shape [M, K])
+  lhs ->
+  -- | The right-hand side tensor (shape [K, N])
+  rhs ->
+  DSLContext (Expr, MapIdentifier)
+matmul2D = matmul2DHelper

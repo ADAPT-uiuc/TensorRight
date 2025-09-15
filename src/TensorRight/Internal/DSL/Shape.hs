@@ -4,6 +4,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -154,6 +155,7 @@ class TensorShapeLike a where
   toTensorShape :: (MonadError Error m) => a -> m TensorShape
 
 instance TensorShapeLike TensorShape where
+  toTensorShape :: (MonadError Error m) => TensorShape -> m TensorShape
   toTensorShape = return
 
 instance TensorShapeLike [TensorShapeDesc] where
