@@ -4,3 +4,4 @@ result.txt
 .envrc
 .direnv
 .vscode/
+dist-newstyle/

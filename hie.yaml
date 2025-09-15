@@ -9,6 +9,48 @@ cradle:
     - path: "./rules/debug/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-debug"
 
+    - path: "./rules/taso/concat/Main.hs"
+      component: "tensor-right:exe:rules-taso-concat"
+
+    - path: "./rules/taso/concat/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-concat"
+
+    - path: "./rules/taso/enlarge/Main.hs"
+      component: "tensor-right:exe:rules-taso-enlarge"
+
+    - path: "./rules/taso/enlarge/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-enlarge"
+
+    - path: "./rules/taso/ewadd/Main.hs"
+      component: "tensor-right:exe:rules-taso-ewadd"
+
+    - path: "./rules/taso/ewadd/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-ewadd"
+
+    - path: "./rules/taso/ewmul/Main.hs"
+      component: "tensor-right:exe:rules-taso-ewmul"
+
+    - path: "./rules/taso/ewmul/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-ewmul"
+
+    - path: "./rules/taso/relu/Main.hs"
+      component: "tensor-right:exe:rules-taso-relu"
+
+    - path: "./rules/taso/relu/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-relu"
+
+    - path: "./rules/taso/smul/Main.hs"
+      component: "tensor-right:exe:rules-taso-smul"
+
+    - path: "./rules/taso/smul/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-smul"
+
+    - path: "./rules/taso/transpose/Main.hs"
+      component: "tensor-right:exe:rules-taso-transpose"
+
+    - path: "./rules/taso/transpose/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-transpose"
+
     - path: "./rules/xla/add/Main.hs"
       component: "tensor-right:exe:rules-xla-add"
 
@@ -146,54 +188,6 @@ cradle:
 
     - path: "./rules/xla/sub/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-sub"
-
-    - path: "./rules/taso/ewadd/Main.hs"
-      component: "tensor-right:exe:rules-taso-ewadd"
-
-    - path: "./rules/taso/ewadd/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-ewadd"
-
-    - path: "./rules/taso/ewmul/Main.hs"
-      component: "tensor-right:exe:rules-taso-ewmul"
-
-    - path: "./rules/taso/ewmul/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-ewmul"
-
-    - path: "./rules/taso/smul/Main.hs"
-      component: "tensor-right:exe:rules-taso-smul"
-
-    - path: "./rules/taso/smul/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-smul"
-
-    - path: "./rules/taso/relu/Main.hs"
-      component: "tensor-right:exe:rules-taso-relu"
-
-    - path: "./rules/taso/relu/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-relu"
-
-    - path: "./rules/taso/concat/Main.hs"
-      component: "tensor-right:exe:rules-taso-concat"
-
-    - path: "./rules/taso/concat/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-concat"
-
-    - path: "./rules/taso/transpose/Main.hs"
-      component: "tensor-right:exe:rules-taso-transpose"
-
-    - path: "./rules/taso/transpose/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-transpose"
-
-    - path: "./rules/taso/enlarge/Main.hs"
-      component: "tensor-right:exe:rules-taso-enlarge"
-
-    - path: "./rules/taso/enlarge/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-enlarge"
-
-    - path: "./rules/taso/matmul/Main.hs"
-      component: "tensor-right:exe:rules-taso-matmul"
-
-    - path: "./rules/taso/matmul/Paths_tensor_right.hs"
-      component: "tensor-right:exe:rules-taso-matmul"
 
     - path: "./test"
       component: "tensor-right:test:spec"

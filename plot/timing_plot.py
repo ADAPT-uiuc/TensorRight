@@ -28,7 +28,7 @@ class Rule:
     def overall_time(self) -> float:
         return sum(x.time for x in self.results)
 
-
+# TODO: Handle ANSI color escape codes
 def parse_file(lines: Sequence[str]) -> list[Rule]:
     """
     The file looks like this:
