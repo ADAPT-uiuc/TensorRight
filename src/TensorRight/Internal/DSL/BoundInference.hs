@@ -229,12 +229,14 @@ groupAccessByTensors = groupBy (on (==) termTensor) . sortOn termTensor
 inferBound ::
   GrisetteSMTConfig ->
   VerifyTask ->
+  HS.HashSet RClassIdentifier ->
   HM.HashMap RClassIdentifier Int ->
   AbstractShape ->
   IO (HM.HashMap RClassIdentifier (Int, Int))
 inferBound
   solverConfig
   (VerifyTask _ lhs rhs pre siRelation _ _ _ _ _ _ _ _ _)
+  nonFixedRClasses
   rankConditions
   sp = do
     let preCond = pre
@@ -289,10 +291,13 @@ inferBound
           max 1 $
             kFromAllAccesses rclass
               + numHasRClassInGroup rclass (HS.toList filteredConditions)
-    let rclassesInShape = HS.toList $ unlabelled sp <> HS.fromList (HM.elems (labelled sp))
-    let baseBounds = HM.fromList $ (\rclass -> (rclass, (1, kForRClass rclass))) <$> rclassesInShape
-    let applyExact acc (r, k) = HM.insert r (k, k) acc
-    return $ foldl applyExact baseBounds (HM.toList rankConditions)
+
+    let fixedRClasses = HM.keysSet rankConditions
+    let inferredBounds =
+          HM.fromList $
+            (\rclass -> (rclass, (1, kForRClass rclass)))
+              <$> HS.toList (nonFixedRClasses `HS.difference` fixedRClasses)
+    return $ HM.union inferredBounds (HM.map (\k -> (k, k)) rankConditions)
 
 abstractShapeAccess :: AbstractShape -> Indices
 abstractShapeAccess AbstractShape {..} = do

@@ -212,8 +212,8 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
           )
           maps
 
-  let singletonRClasses = HS.fromList [r | (r, k) <- HM.toList rankConditions, k == 1]
-  let nonSingletonRClasses = declaredRClasses `HS.difference` singletonRClasses
+  let fixedRClasses = HM.keysSet rankConditions
+  let nonFixedRClasses = declaredRClasses `HS.difference` fixedRClasses
   return
     ( VerifyTask
         solverConfig
@@ -230,8 +230,8 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
         otherSISymbols
         monitoringTensors
         monitoringSizes,
-      nonSingletonRClasses,
-      singletonRClasses,
+      nonFixedRClasses,
+      fixedRClasses,
       exprAbstractShapes HM.! exprId (lhs rewrite)
     )
 
@@ -299,22 +299,22 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
     Right (rewrite, env) -> do
       putStrLn $ "Verifying rule " <> T.unpack (name rewrite)
       let bound0 = baseRClassBound0 rewrite env
-      (_task, _nonSingletonRClasses, _singletonRClasses, shape) <-
+      (task, nonSingletonRClasses, _singletonRClasses, shape) <-
         verifyDSLWithNDim solverConfig rewrite env bound0
-      inferredBound <-
-        inferBound solverConfig _task (rankConditions env) shape
-      putStrLn $ "Inferred bounds: " <> show inferredBound
+      inferredBounds <-
+        inferBound solverConfig task nonSingletonRClasses (rankConditions env) shape
+      putStrLn $ "Inferred bounds: " <> show inferredBounds
       putStrLn $
         "[INFO"
           <> maybe "" ("-" <>) theoryInfo
           <> "]: Inferred bounds: "
-          <> show inferredBound
+          <> show inferredBounds
       putStrLn $
         "[INFO"
           <> maybe "" ("-" <>) theoryInfo
           <> "]: Number of bounded verification tasks: "
-          <> show (product $ fmap (\(l, u) -> u - l + 1) inferredBound)
-      let ndims = allNdims $ HM.toList inferredBound
+          <> show (product $ fmap (\(l, u) -> u - l + 1) inferredBounds)
+      let ndims = allNdims $ HM.toList inferredBounds
       let fst4 (a, _, _, _) = a
       traverse_
         (verifyDSLWithNDim solverConfig rewrite env >=> verifyRule . fst4)
