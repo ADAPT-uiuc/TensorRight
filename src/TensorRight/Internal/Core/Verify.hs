@@ -381,7 +381,8 @@ verifyRule
               printWarning $ "Some right si cannot be accessed."
               return False
           unless (allokl && allokr) $
-            printWarning $ "Some SI cannot be accessed."
+            printWarning $
+              "Some SI cannot be accessed."
         else printWarning $ "SI-relation is not bijective."
 
     cond1 <-
