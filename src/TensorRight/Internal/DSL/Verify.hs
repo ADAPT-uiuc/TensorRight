@@ -57,8 +57,8 @@ import TensorRight.Internal.DSL.DSL
         lhsSIMaps,
         numTensorAssumptions,
         preConditions,
+        rankConditions,
         rhsSIMaps,
-        singletonRClasses,
         tensorShapes
       ),
     ValidElem,
@@ -97,7 +97,7 @@ import TensorRight.Internal.DSL.Identifier (RClassIdentifier)
 import TensorRight.Internal.DSL.Shape
   ( AbstractShape,
   )
-import TensorRight.Internal.Util.Pretty (printTitle, printSuccess, printFailure)
+import TensorRight.Internal.Util.Pretty (printFailure, printSuccess, printTitle)
 
 verifyDSLWithNDim ::
   GrisetteSMTConfig ->
@@ -211,6 +211,9 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
                 else mempty
           )
           maps
+
+  let singletonRClasses = HS.fromList [r | (r, k) <- HM.toList rankConditions, k == 1]
+  let nonSingletonRClasses = declaredRClasses `HS.difference` singletonRClasses
   return
     ( VerifyTask
         solverConfig
@@ -227,7 +230,7 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
         otherSISymbols
         monitoringTensors
         monitoringSizes,
-      declaredRClasses `HS.difference` singletonRClasses,
+      nonSingletonRClasses,
       singletonRClasses,
       exprAbstractShapes HM.! exprId (lhs rewrite)
     )
@@ -261,10 +264,11 @@ printResult subTheory Result {..} =
   if isRight result
     then printSuccess theory $ time <> " Verification succeeded."
     else printFailure theory $ time <> " Verification failed with error: " <> showError result
-  where showError (Left e) = show e
-        showError (Right _) = ""
-        time = "[" <> show elapsedTime <> "s]"
-        theory = (maybe "" ("-" <>) subTheory)
+  where
+    showError (Left e) = show e
+    showError (Right _) = ""
+    time = "[" <> show elapsedTime <> "s]"
+    theory = maybe "" ("-" <>) subTheory
 
 bracketFailure ::
   DSLContext Rewrite -> IO () -> IO Result
@@ -295,15 +299,10 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
     Right (rewrite, env) -> do
       putStrLn $ "Verifying rule " <> T.unpack (name rewrite)
       let bound0 = baseRClassBound0 rewrite env
-      (task, nonSingletonRClasses, singletonRClasses, shape) <-
+      (_task, _nonSingletonRClasses, _singletonRClasses, shape) <-
         verifyDSLWithNDim solverConfig rewrite env bound0
       inferredBound <-
-        inferBound
-          solverConfig
-          task
-          nonSingletonRClasses
-          singletonRClasses
-          shape
+        inferBound solverConfig _task (rankConditions env) shape
       putStrLn $ "Inferred bounds: " <> show inferredBound
       putStrLn $
         "[INFO"
@@ -314,19 +313,19 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
         "[INFO"
           <> maybe "" ("-" <>) theoryInfo
           <> "]: Number of bounded verification tasks: "
-          <> show (product inferredBound)
+          <> show (product $ fmap (\(l, u) -> u - l + 1) inferredBound)
       let ndims = allNdims $ HM.toList inferredBound
       let fst4 (a, _, _, _) = a
       traverse_
         (verifyDSLWithNDim solverConfig rewrite env >=> verifyRule . fst4)
         ndims
   where
-    allNdims :: [(RClassIdentifier, Int)] -> [HM.HashMap RClassIdentifier Int]
+    allNdims :: [(RClassIdentifier, (Int, Int))] -> [HM.HashMap RClassIdentifier Int]
     allNdims inferredBoundList =
       HM.fromList
         <$> traverse
-          ( \(rclassIdent, bound) ->
-              [(rclassIdent, i) | i <- [1 .. bound]]
+          ( \(rclassIdent, (lower, upper)) ->
+              [(rclassIdent, i) | i <- [lower .. upper]]
           )
           inferredBoundList
 

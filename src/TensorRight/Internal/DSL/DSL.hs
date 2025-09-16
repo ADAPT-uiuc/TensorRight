@@ -36,6 +36,7 @@ module TensorRight.Internal.DSL.DSL
     newTensor,
     numBinOp,
     boolBinOp,
+    rankPrecondition,
     reduce,
     siRelation,
     precondition,
@@ -60,6 +61,7 @@ module TensorRight.Internal.DSL.DSL
     boolUnaryOp,
     convBase,
     conv,
+    newSingletonRClass,
     monitorExprOnFailure,
     monitorMapOnFailure,
     clamp,
@@ -74,8 +76,6 @@ module TensorRight.Internal.DSL.DSL
     matmul2DHelper,
     matmul3DHelper,
     twoRefsOf,
-    twoSingletonRefsOf,
-    transpose2DSingleton,
     Padding (..),
     ConvConfig (..),
     ConvPadding (..),
@@ -131,7 +131,7 @@ import TensorRight.Internal.DSL.Expr
     ConvPaddingArgsExpr (ConvPaddingArgsExpr, high, ldilation, low, rdilation),
     DSLContext,
     DySliceArgsExpr (DySliceArgsExpr, sizes, start),
-    Env (Env, lhsSIMaps, numTensorAssumptions),
+    Env (..),
     Expr,
     NumTensorAssumption (NumTensorAssumption),
     PaddingArgsExpr (PaddingArgsExpr, high, interior, low),
@@ -185,7 +185,6 @@ import TensorRight.Internal.DSL.Expr
     rhsSIMaps,
     runDSLContext,
     siRelations,
-    singletonRClasses,
     tensorDTypes,
     tensorShapes,
     validTensorShape,
@@ -398,6 +397,23 @@ precondition ::
   ([SymInteger] -> SymBool) ->
   DSLContext ()
 precondition maps = precondition' maps . zipCondition
+
+-- | Declare an exact rank for an RClass. Sets rankConditions[rclass] = k.
+rankPrecondition ::
+  RClassIdentifier ->
+  Int ->
+  DSLContext ()
+rankPrecondition rclass k = do
+  assert "rankPrecondition: k must be >= 1" (k >= 1)
+  env <- get
+  case HM.lookup rclass (rankConditions env) of
+    Just k' -> assert "Conflicting rankPrecondition for the same RClass" (k' == k)
+    Nothing -> return ()
+  put $ env {rankConditions = HM.insert rclass k (rankConditions env)}
+
+-- | Mark an existing RClass as singleton (exact rank 1).
+newSingletonRClass :: RClassIdentifier -> DSLContext ()
+newSingletonRClass r = rankPrecondition r 1
 
 -- | Add an SI relation to rewriting rule.
 -- It is similar to 'precondition', but it is used to specify the SI relations.
@@ -680,8 +696,7 @@ iota shapeDesc d = do
     validTensorShape shape
     let abstractShape = toAbstractShape shape
     rclass <- getRClassByRClassRef abstractShape d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    newSingletonRClass rclass
     return (abstractShape, IntType)
 
 -- | The named arguments to the 'slice' operation.
@@ -1104,8 +1119,7 @@ concatTensor lhs' rhs' d = do
     assert "lhs and rhs must have the same rclasses" $ shapeLhs == shapeRhs
     assert "lhs and rhs must have the same type" $ tyLhs == tyRhs
     rclass <- getRClassByRClassRef shapeLhs d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    newSingletonRClass rclass
     return (shapeLhs, tyLhs)
 
 -- | Concatenate a list of tensors.
@@ -1125,8 +1139,7 @@ concatTensorList exprs' d = do
     assert "All tensors in concatList must have the same RClasses" $ all (== head shapes) shapes
     assert "All tensors in concatList must have the same type" $ all (== head tys) tys
     rclass <- getRClassByRClassRef (head shapes) d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    newSingletonRClass rclass
     return (head shapes, head tys)
 
 -- | Relabel operation.
@@ -1552,29 +1565,9 @@ matmul3DHelper lhs' rhs' = do
   -- lhsBatch should match rhsBatch, lhsK should match rhsK
   dot lhs rhs [lhsK --> contractSI] [lhsBatch]
 
--- | Helper function for transpose2D. Ignores singleton
+-- | Helper function for transpose2D.
 transpose2D :: (ExprInContext e) => e -> DSLContext Expr
 transpose2D e' = do
   e <- liftInContext e'
   (a, b) <- twoRefsOf e
-  relabel e [a --> b, b --> a]
-
--- | Gets the two aggregated axes from a strictly-2D tensor where
--- both underlying RClasses are singleton.
-twoSingletonRefsOf :: Expr -> DSLContext (RClassRef, RClassRef)
-twoSingletonRefsOf e = do
-  shape <- shapeOf e
-  (a, b) <- twoRefsOf e
-  ra <- getRClassByRClassRef shape a
-  rb <- getRClassByRClassRef shape b
-  env <- get
-  let singletons = singletonRClasses env
-  assert "transpose2D: both rclasses must be singleton" $ HS.member ra singletons && HS.member rb singletons
-  return (a, b)
-
--- | Strict 2D transpose: only allowed when both axes are singleton.
-transpose2DSingleton :: (ExprInContext e) => e -> DSLContext Expr
-transpose2DSingleton e' = do
-  e <- liftInContext e'
-  (a, b) <- twoSingletonRefsOf e
   relabel e [a --> b, b --> a]

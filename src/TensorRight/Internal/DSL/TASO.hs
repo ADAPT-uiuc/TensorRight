@@ -19,7 +19,6 @@ module TensorRight.Internal.DSL.TASO
     relu,
     concat,
     transpose,
-    transposeSingleton,
     enlarge,
     matmul2D,
   )
@@ -45,7 +44,6 @@ import TensorRight.Internal.DSL.DSL
     pad,
     precondition,
     transpose2D,
-    transpose2DSingleton,
   )
 import TensorRight.Internal.DSL.Expr (getRClassByMap)
 import TensorRight.Internal.DSL.Identifier (MapIdentifier)
@@ -111,13 +109,6 @@ transpose ::
   e ->
   DSLContext Expr
 transpose = transpose2D
-
-transposeSingleton ::
-  (ExprInContext e) =>
-  -- | The tensor to transpose
-  e ->
-  DSLContext Expr
-transposeSingleton = transpose2DSingleton
 
 -- | TASO's enlarge operator
 enlarge ::

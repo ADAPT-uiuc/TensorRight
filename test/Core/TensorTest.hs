@@ -17,7 +17,7 @@ import Grisette
     ITEOp (symIte),
     LogicalOp ((.&&)),
     SimpleMergeable,
-    Solvable (con, isym, ssym),
+    Solvable (con, ssym),
     SymBool,
     SymEq ((.==)),
     SymInteger,
