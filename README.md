@@ -1,4 +1,6 @@
-# TensorRight
+# TensorRight: Automated Verification of Tensor Graph Rewrites
+
+<img src="docs/images/award.png" alt="Distinguished Paper Award" width=110> <img src="docs/images/artifacts_available_v1_1.png" alt="Badge: Artifacts Available" width=110> <img src="docs/images/artifacts_evaluated_reusable_v1_1.png" alt="Badge: Artifacts Available - Reusable" width=110>
 
 TensorRight is an automatic tool to verify tensor graph rewrites for tensors of arbitrary ranks and sizes.
 Tensor Graph Rewriting is one of the key optimizations in Tensor Compilers such as [XLA](https://github.com/openxla/xla).
@@ -12,13 +14,13 @@ TensorRight implements the denotational semantics for these operators.
 - TensorRight presents an automatic verification strategy to verify tensor graph rewrites in the unbounded setting, i.e, for arbitrary ranks and sizes, by inferring a bound on aggregated-axis ranks, such that verifying the rewrite for all ranks within the bound implies correctness in the unbounded setting. <br>
 Hence, TensorRight converts the _unbounded-verification_ proof obligation to a finite set of _bounded-verification_ proof obligations, which are then dispatched to an SMT solver using symbolic execution to automatically verify rewrite rules.
 - TensorRight is implemented in Haskell and uses [Grisette](https://github.com/lsrcz/grisette) as the symbolic evaluation engine.
-TensorRight can successfully represent 121 of the 175 rewrites present in [XLA's algebraic simplifier](https://github.com/openxla/xla/blob/main/xla/hlo/transforms/simplifiers/algebraic_simplifier.cc) and is able to verify 115 of those in the unbounded setting.
+TensorRight can successfully represent 121 of the 175 rewrites present in [XLA's algebraic simplifier](https://github.com/openxla/xla/blob/main/xla/hlo/transforms/simplifiers/algebraic_simplifier.cc) and is able to verify 116 of those in the unbounded setting.
 
 ## Publications
 
 - [TensorRight: Automated Verification of Tensor Graph Rewrites](https://dl.acm.org/doi/10.1145/3704865) <br/>
 Jai Arora, Sirui Lu, Devansh Jain, Tianfan Xu, Farzin Houshmand, Phitchaya Mangpo Phothilimthana, Mohsen Lesani, Praveen Narayanan, Karthik Srinivasa Murthy, Rastislav Bodik, Amit Sabne, and Charith Mendis. <br/>
-In Proceedings of the 52nd ACM SIGPLAN Symposium on Principles of Programming Languages (POPL'25), January 2025, Denver, Colorado, USA
+In Proceedings of the 52nd ACM SIGPLAN Symposium on Principles of Programming Languages (POPL'25), January 2025, Denver, Colorado, USA <p style="color: red;">🏆Distinguished Paper Award</p>
 
 <details class="bibtex">
     <summary>BibTeX</summary>
@@ -85,7 +87,7 @@ git clone https://github.com/ADAPT-uiuc/TensorRight.git && cd TensorRight/ && st
 # Regression Tests: all testcases should pass
 stack test
 
-# Verifying Rewrite Rules: 115/118 passed
+# Verifying Rewrite Rules: 116/118 passed
 make verify
 ```
 
