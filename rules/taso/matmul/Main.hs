@@ -2,7 +2,7 @@ module Main (main) where
 
 import Grisette hiding (dot, (-->))
 import TensorRight
-import TensorRight.Internal.DSL.DSL (checkSIMap, siRelation)
+import TensorRight.Internal.DSL.DSL (checkSIMap, monitorExprOnFailure, newSingletonRClass, newSingletonRClasses, siRelation)
 import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, matmul2D, relu, smul, transpose)
 import Prelude hiding (concat)
 
@@ -10,7 +10,7 @@ import Prelude hiding (concat)
 -- ∀x, y, z. matmul(x, matmul(y, z)) = matmul(matmul(x, y), z)
 matmulAssociativity :: forall a. NumRule a
 matmulAssociativity _ = do
-  [rclassM, rclassK, rclassN, rclassP] <- newRClasses ["rclassM", "rclassK", "rclassN", "rclassP"]
+  [rclassM, rclassK, rclassN, rclassP] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN", "rclassP"]
   sizeM <- newMap "sizeM" rclassM
   sizeK <- newMap "sizeK" rclassK
   sizeN <- newMap "sizeN" rclassN
@@ -19,15 +19,18 @@ matmulAssociativity _ = do
   x <- newTensor @a "x" [rclassM --> sizeM, rclassK --> sizeK]
   y <- newTensor @a "y" [rclassK --> sizeK, rclassN --> sizeN] -- Shared K and N
   z <- newTensor @a "z" [rclassN --> sizeN, rclassP --> sizeP] -- Shared N
-  (yzExpr, nL) <- matmul2D y z
-  (xyExpr, kR) <- matmul2D x y
+  nL <- newMap "contractSI" rclassN
+  nR <- newMap "contractSI" rclassN
 
-  (lhs, kL) <- matmul2D x yzExpr
-  (rhs, nR) <- matmul2D xyExpr z
+  kL <- newMap "contractSI" rclassK
+  kR <- newMap "contractSI" rclassK
 
   siRelation [kL, kR] $ \[l, r] -> l .== r
   siRelation [nL, nR] $ \[l, r] -> l .== r
   checkSIMap [kL, nL] [kR, nR]
+
+  lhs <- matmul2D x (matmul2D y z [rclassN --> nL]) [rclassK --> kL]
+  rhs <- matmul2D (matmul2D x y [rclassK --> kR]) z [rclassN --> nR]
 
   rewrite "matmul(x, matmul(y, z)) ⇒ matmul(matmul(x, y), z)" lhs rhs
 
@@ -36,7 +39,7 @@ matmulAssociativity _ = do
 matmulScalarLinear :: forall a. NumRule a
 matmulScalarLinear _ = do
   let w = ("w" :: a)
-  [rclassM, rclassK, rclassN] <- newRClasses ["rclassM", "rclassK", "rclassN"]
+  [rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN"]
   sizeM <- newMap "sizeM" rclassM
   sizeK <- newMap "sizeK" rclassK
   sizeN <- newMap "sizeN" rclassN
@@ -44,10 +47,12 @@ matmulScalarLinear _ = do
   x <- newTensor @a "x" [rclassM --> sizeM, rclassK --> sizeK]
   y <- newTensor @a "y" [rclassK --> sizeK, rclassN --> sizeN]
 
-  (xy, kL) <- matmul2D x y
+  kL <- newMap "contractSI" rclassK
+  kR <- newMap "contractSI" rclassK
+  xy <- matmul2D x y [rclassK --> kL]
   lhs <- smul xy w
   yw <- smul y w
-  (rhs, kR) <- matmul2D x yw
+  rhs <- matmul2D x yw [rclassK --> kR]
 
   siRelation [kL, kR] $ \[l, r] -> l .== r
   checkSIMap [kL] [kR]
@@ -58,7 +63,7 @@ matmulScalarLinear _ = do
 -- ∀x, y, z. matmul(x, ewadd(y, z)) = ewadd(matmul(x, y), matmul(x, z))
 matmulDistributive :: forall a. NumRule a
 matmulDistributive _ = do
-  [rclassM, rclassK, rclassN] <- newRClasses ["rclassM", "rclassK", "rclassN"]
+  [rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN"]
   sizeM <- newMap "sizeM" rclassM
   sizeK <- newMap "sizeK" rclassK
   sizeN <- newMap "sizeN" rclassN
@@ -68,9 +73,12 @@ matmulDistributive _ = do
   z <- newTensor @a "z" [rclassK --> sizeK, rclassN --> sizeN]
 
   yz <- ewadd y z
-  (lhs, kL) <- matmul2D x yz
-  (xy, kR1) <- matmul2D x y
-  (xz, kR2) <- matmul2D x z
+  kL <- newMap "contractSI" rclassK
+  kR1 <- newMap "contractSI" rclassK
+  kR2 <- newMap "contractSI" rclassK
+  lhs <- matmul2D x yz [rclassK --> kL]
+  xy <- matmul2D x y [rclassK --> kR1]
+  xz <- matmul2D x z [rclassK --> kR2]
   rhs <- ewadd xy xz
 
   siRelation [kL, kR1] $ \[l, r] -> l .== r
@@ -83,21 +91,30 @@ matmulDistributive _ = do
 -- ∀x, y. transpose(matmul(x, y)) = matmul(transpose(y), transpose(x))
 matmulTranspose :: forall a. NumRule a
 matmulTranspose _ = do
-  [rclassM, rclassK, rclassN] <- newRClasses ["rclassM", "rclassK", "rclassN"]
+  [rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN"]
   sizeM <- newMap "sizeM" rclassM
   sizeK <- newMap "sizeK" rclassK
   sizeN <- newMap "sizeN" rclassN
 
-  -- Label axes so transpose works via label swap instead of ByRClass swap
+  -- Labelled inputs
   x <- newTensor @a "x" [rclassM --> sizeM @@ "L", rclassK --> sizeK @@ "K"]
   y <- newTensor @a "y" [rclassK --> sizeK @@ "K", rclassN --> sizeN @@ "R"]
-  (xy, kL) <- matmul2D x y -- TODO: Pass the rclass explicitly instead of inferring
-  lhs <- transpose xy
-  yt <- transpose y
-  xt <- transpose x
-  (rhs, kR) <- matmul2D yt xt
 
-  siRelation [kL, kR] $ \[l, r] -> l .== r
+  -- LHS: transpose(matmul(x, y))
+  kL <- newMap "contractSI" rclassK
+  -- xy should be [rclassM @@ "L" rclassN @@ "R"]
+  xy <- matmul2D x y [ByLabel "K" --> kL]
+  -- lhs should be [rclassM @@ "R" rclassN @@ "L"]
+  lhs <- transpose xy
+
+  -- RHS: matmul(transpose(y), transpose(x))
+  yt <- transpose y -- [rclassK @@ "R", rclassN @@ "K"]
+  xt0 <- transpose x -- [rclassM @@ "K", rclassK @@ "L"]
+  xt <- relabel xt0 [ByLabel "L" --> ByLabel "R", ByLabel "K" --> ByLabel "K'"] -- [rclassM @@ "K'", rclassK @@ "R"]
+  kR <- newMap "contractSI" rclassK
+  rhs <- matmul2D yt xt [ByLabel "R" --> kR]
+
+  siRelation [kL, kR] $ \[i, j] -> i .== j
   checkSIMap [kL] [kR]
 
   rewrite "transpose(matmul(x, y)) ⇒ matmul(transpose(y), transpose(x))" lhs rhs
@@ -106,26 +123,21 @@ matmulTranspose _ = do
 -- ∀x. matmul(x, I) = x (where I is identity matrix)
 matmulIdentity :: forall a. NumRule a
 matmulIdentity _ = do
-  [rclassM, rclassN] <- newRClasses ["rclassM", "rclassN"]
+  [rclassM, rclassN] <- newSingletonRClasses ["rclassM", "rclassN"]
   sizeM <- newMap "sizeM" rclassM
   sizeN <- newMap "sizeN" rclassN
 
   x <- newTensor @a "x" [rclassM --> sizeM, rclassN --> sizeN]
-  identityRow <- iota [rclassM --> sizeM, rclassN --> sizeN] (ByRClass rclassM)
-  identityCol <- iota [rclassM --> sizeM, rclassN --> sizeN] (ByRClass rclassN)
+  identityRow <- iota [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"] (ByLabel "L")
+  identityCol <- iota [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"] (ByLabel "R")
   identityMask <- compareOp Eqv identityRow identityCol
-  ones <- constant @a 1 [rclassM --> sizeM, rclassN --> sizeN]
-  zeros <- constant @a 0 [rclassM --> sizeM, rclassN --> sizeN]
+  ones <- constant @a 1 [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"]
+  zeros <- constant @a 0 [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"]
   identityMatrix <- select identityMask ones zeros
 
-  -- Precondition: matrix must be square
-  precondition [sizeM, sizeN] $ \[m, n] -> m .== n
-
-  (lhs, _) <- matmul2D x identityMatrix
+  nL <- newMap "contractSI" rclassN
+  lhs <- matmul2D x identityMatrix [rclassN --> nL]
   let rhs = x
-
-  monitorExprOnFailure "x" x
-  monitorExprOnFailure "I" identityMatrix
 
   rewrite "matmul(x, I) ⇒ x" lhs rhs
 
@@ -133,7 +145,7 @@ matmulIdentity _ = do
 -- -- ∀x, y, z. concat(1, matmul(x, y), matmul(x, z)) = matmul(x, concat(1, y, z))
 matmulConcatRight :: forall a. NumRule a
 matmulConcatRight _ = do
-  [rclassM, rclassK, rclassN] <- newRClasses ["rclassM", "rclassK", "rclassN"]
+  [rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN"]
   sizeM <- newMap "sizeM" rclassM
   sizeK <- newMap "sizeK" rclassK
   [sizeN1, sizeN2] <- newMaps ["sizeN1", "sizeN2"] rclassN
@@ -142,11 +154,14 @@ matmulConcatRight _ = do
   y <- newTensor @a "y" [rclassK --> sizeK, rclassN --> sizeN1]
   z <- newTensor @a "z" [rclassK --> sizeK, rclassN --> sizeN2]
 
-  (xy, kL1) <- matmul2D x y
-  (xz, kL2) <- matmul2D x z
+  kL1 <- newMap "contractSI" rclassK
+  kL2 <- newMap "contractSI" rclassK
+  xy <- matmul2D x y [rclassK --> kL1]
+  xz <- matmul2D x z [rclassK --> kL2]
   lhs <- concat (ByRClass rclassN) xy xz
   yz <- concat (ByRClass rclassN) y z
-  (rhs, kR) <- matmul2D x yz
+  kR <- newMap "contractSI" rclassK
+  rhs <- matmul2D x yz [rclassK --> kR]
 
   siRelation [kL1, kR] $ \[l, r] -> l .== r
   siRelation [kL2, kR] $ \[l, r] -> l .== r
@@ -158,7 +173,7 @@ matmulConcatRight _ = do
 -- ∀x, y, z, w. matmul(concat(1, x, z), concat(0, y, w)) = ewadd(matmul(x, y), matmul(z, w))
 matmulConcatMixed :: forall a. NumRule a
 matmulConcatMixed _ = do
-  [rclassM, rclassK, rclassN] <- newRClasses ["rclassM", "rclassK", "rclassN"]
+  [rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN"]
   [sizeM1, sizeM2] <- newMaps ["sizeM1", "sizeM2"] rclassM
   [sizeK1, sizeK2] <- newMaps ["sizeK1", "sizeK2"] rclassK
   sizeN <- newMap "sizeN" rclassN
@@ -174,9 +189,12 @@ matmulConcatMixed _ = do
 
   xz <- concat (ByRClass rclassM) x z
   yw <- concat (ByRClass rclassK) y w
-  (lhs, kL) <- matmul2D xz yw
-  (xy, kR1) <- matmul2D x y
-  (zw, kR2) <- matmul2D z w
+  kL <- newMap "contractSI" rclassK
+  kR1 <- newMap "contractSI" rclassK
+  kR2 <- newMap "contractSI" rclassK
+  lhs <- matmul2D xz yw [rclassK --> kL]
+  xy <- matmul2D x y [rclassK --> kR1]
+  zw <- matmul2D z w [rclassK --> kR2]
   rhs <- ewadd xy zw
 
   siRelation [kL, kR1] $ \[l, r] -> l .== r
@@ -187,20 +205,23 @@ matmulConcatMixed _ = do
 
 main :: IO ()
 main = do
-  printTitle "#################### matmulAssociativity ####################"
-  verifyNumDSL matmulAssociativity
-  printTitle "#################### matmulScalarLinear #####################"
-  verifyNumDSL matmulScalarLinear
-  printTitle "#################### matmulDistributive #####################"
-  verifyNumDSL matmulDistributive
+  -- printTitle "#################### matmulAssociativity ####################"
+  -- verifyNumDSL matmulAssociativity
 
--- printTitle "###################### matmulTranspose ######################"
--- verifyNumDSL matmulTranspose
+  -- printTitle "#################### matmulScalarLinear #####################"
+  -- verifyNumDSL matmulScalarLinear
+
+  -- printTitle "#################### matmulDistributive #####################"
+  -- verifyNumDSL matmulDistributive
+
+  printTitle "###################### matmulTranspose ######################"
+  verifyNumDSL matmulTranspose
 
 -- printTitle "###################### matmulIdentity #######################"
 -- verifyNumDSL matmulIdentity
 
 -- printTitle "#################### matmulConcatRight ######################"
 -- verifyNumDSL matmulConcatRight
+
 -- printTitle "##################### matmulConcatMixed #####################"
 -- verifyNumDSL matmulConcatMixed

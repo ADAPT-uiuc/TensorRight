@@ -71,6 +71,7 @@ import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
 import Data.Hashable (Hashable (hashWithSalt))
 import Data.Tuple (swap)
+import Debug.Trace
 import GHC.Generics (Generic)
 import Grisette
   ( Apply (apply),
@@ -263,6 +264,8 @@ indicesNonNegative dims =
 indicesInRange ::
   (MonadError Error m, MonadUnion m) => Sizes -> Indices -> m ()
 indicesInRange dims indices = do
+  traceM $ "Axes" ++ show (allAxes dims)
+  traceM $ "Indices" ++ show (allAxes indices)
   assert "Axes does not match." $ allAxes dims == allAxes indices
   let assertInRange axis =
         assert

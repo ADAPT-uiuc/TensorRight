@@ -62,6 +62,7 @@ module TensorRight.Internal.DSL.DSL
     convBase,
     conv,
     newSingletonRClass,
+    newSingletonRClasses,
     monitorExprOnFailure,
     monitorMapOnFailure,
     clamp,
@@ -99,6 +100,7 @@ import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
 import Data.String (IsString)
 import qualified Data.Text as T
+import Debug.Trace (traceM)
 import Grisette
   ( Mergeable,
     SymBool,
@@ -412,8 +414,19 @@ rankPrecondition rclass k = do
   put $ env {rankConditions = HM.insert rclass k (rankConditions env)}
 
 -- | Mark an existing RClass as singleton (exact rank 1).
-newSingletonRClass :: RClassIdentifier -> DSLContext ()
-newSingletonRClass r = rankPrecondition r 1
+markSingleton :: RClassIdentifier -> DSLContext ()
+markSingleton r = rankPrecondition r 1
+
+-- | Create a new singleton RClass
+newSingletonRClass :: T.Text -> DSLContext RClassIdentifier
+newSingletonRClass label = do
+  rclass <- newRClass label
+  markSingleton rclass
+  return rclass
+
+-- | Create singleton RClasses
+newSingletonRClasses :: [T.Text] -> DSLContext [RClassIdentifier]
+newSingletonRClasses = traverse newSingletonRClass
 
 -- | Add an SI relation to rewriting rule.
 -- It is similar to 'precondition', but it is used to specify the SI relations.
@@ -696,7 +709,7 @@ iota shapeDesc d = do
     validTensorShape shape
     let abstractShape = toAbstractShape shape
     rclass <- getRClassByRClassRef abstractShape d
-    newSingletonRClass rclass
+    markSingleton rclass
     return (abstractShape, IntType)
 
 -- | The named arguments to the 'slice' operation.
@@ -1119,7 +1132,7 @@ concatTensor lhs' rhs' d = do
     assert "lhs and rhs must have the same rclasses" $ shapeLhs == shapeRhs
     assert "lhs and rhs must have the same type" $ tyLhs == tyRhs
     rclass <- getRClassByRClassRef shapeLhs d
-    newSingletonRClass rclass
+    markSingleton rclass
     return (shapeLhs, tyLhs)
 
 -- | Concatenate a list of tensors.
@@ -1139,7 +1152,7 @@ concatTensorList exprs' d = do
     assert "All tensors in concatList must have the same RClasses" $ all (== head shapes) shapes
     assert "All tensors in concatList must have the same type" $ all (== head tys) tys
     rclass <- getRClassByRClassRef (head shapes) d
-    newSingletonRClass rclass
+    markSingleton rclass
     return (head shapes, head tys)
 
 -- | Relabel operation.
@@ -1208,6 +1221,14 @@ dot lhs rhs contractingSIMapsDesc batchRClasses = do
     let dotAllRefs = HM.keysSet contractingSIMaps <> HS.fromList batchRClasses
     let lhsAllRefs = abstractShapeAllRefs shapeLhs
     let rhsAllRefs = abstractShapeAllRefs shapeRhs
+
+    traceM $ "batchRClasses" ++ show batchRClasses
+    traceM $ "contractingSIMaps" ++ show contractingSIMaps
+    traceM $ "lhsRefs" ++ show lhsAllRefs
+    traceM $ "rhsRefs" ++ show rhsAllRefs
+    traceM $ "dotAllRefs" ++ show dotAllRefs
+    traceM $ "intersection" ++ show (HS.intersection lhsAllRefs rhsAllRefs)
+
     assert
       ( "Contraction + batch rclasses must be exactly the interaction of lhs and "
           <> "rhs rclasses"
@@ -1530,19 +1551,15 @@ matmul2DHelper ::
   lhs ->
   -- | The right-hand side tensor (shape [K, N])
   rhs ->
-  DSLContext (Expr, MapIdentifier)
-matmul2DHelper lhs' rhs' = do
+  -- | The contracting SI maps.
+  [ParamDesc] ->
+  DSLContext Expr
+matmul2DHelper lhs' rhs' contract = do
   lhs <- liftInContext lhs'
   rhs <- liftInContext rhs'
-  shapeLhs <- shapeOf lhs
-  shapeRhs <- shapeOf rhs
-  let shared = HS.toList $ abstractShapeAllRefs shapeLhs `HS.intersection` abstractShapeAllRefs shapeRhs
-  assert "matmul2D: tensors must share exactly one rclass" $ length shared == 1
-  let [kRef] = shared
-  kRClass <- getRClassByRClassRef shapeLhs kRef
-  kSI <- newMap "contract" kRClass
-  expr <- dot lhs rhs [kRef --> kSI] []
-  return (expr, kSI)
+  (_, _) <- twoRefsOf lhs
+  (_, _) <- twoRefsOf rhs
+  dot lhs rhs contract []
 
 matmul3DHelper ::
   (ExprInContext lhs, ExprInContext rhs) =>
@@ -1550,20 +1567,18 @@ matmul3DHelper ::
   lhs ->
   -- | The right-hand side tensor (shape [B, K, N])
   rhs ->
+  -- | The contracting SI maps.
+  [ParamDesc] ->
+  -- | The batch rclasses.
+  [RClassRef] ->
   DSLContext Expr
-matmul3DHelper lhs' rhs' = do
+matmul3DHelper lhs' rhs' contract batch = do
   lhs <- liftInContext lhs'
   rhs <- liftInContext rhs'
   -- Get the three axes from each tensor
-  (lhsBatch, _, lhsK) <- threeRefsOf lhs -- B, M, K
+  (_, _, _) <- threeRefsOf lhs -- B, M, K
   (_, _, _) <- threeRefsOf rhs -- B, K, N
-  -- Create contracting SI map for the shared K dimension
-  shapeLhs <- shapeOf lhs
-  rclassK <- getRClassByRClassRef shapeLhs lhsK
-  contractSI <- newMap "contractSI" rclassK
-  -- Contract on K dimension, batch on B dimension
-  -- lhsBatch should match rhsBatch, lhsK should match rhsK
-  dot lhs rhs [lhsK --> contractSI] [lhsBatch]
+  dot lhs rhs contract batch
 
 -- | Helper function for transpose2D.
 transpose2D :: (ExprInContext e) => e -> DSLContext Expr

@@ -2,7 +2,7 @@ module Main (main) where
 
 import Grisette hiding ((-->))
 import TensorRight
-import TensorRight.Internal.DSL.DSL (twoRefsOf)
+import TensorRight.Internal.DSL.DSL (newSingletonRClass, twoRefsOf)
 import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, relu, smul, transpose)
 import Prelude hiding (concat)
 
@@ -10,7 +10,7 @@ import Prelude hiding (concat)
 -- Desugaring for general TASO transpose
 desugarTranspose :: forall a. AnyDTypeRule a
 desugarTranspose _ = do
-  rclass <- newRClass "rclass"
+  rclass <- newSingletonRClass "rclass"
   s1 <- newMap "s1" rclass
   s2 <- newMap "s2" rclass
   tA <- newTensor @a "A" [rclass --> s1 @@ "L", rclass --> s2 @@ "R"]
@@ -21,7 +21,7 @@ desugarTranspose _ = do
 
 inverse :: forall a. AnyDTypeRule a
 inverse _ = do
-  rclass <- newRClass "rclass"
+  rclass <- newSingletonRClass "rclass"
   s1 <- newMap "s1" rclass
   s2 <- newMap "s2" rclass
   tA <- newTensor @a "A" [rclass --> s1 @@ "L", rclass --> s2 @@ "R"]
@@ -31,7 +31,7 @@ inverse _ = do
 -- transpose(ewadd(x, y)) = ewadd(transpose(x), transpose(y))
 transposeEwadd :: forall a. NumRule a
 transposeEwadd _ = do
-  r <- newRClass "r"
+  r <- newSingletonRClass "r"
   sL <- newMap "sL" r
   sR <- newMap "sR" r
   x <- newTensor @a "x" [r --> sL @@ "L", r --> sR @@ "R"]
@@ -43,7 +43,7 @@ transposeEwadd _ = do
 -- transpose(ewmul(x, y)) = ewmul(transpose(x), transpose(y))
 transposeEwmul :: forall a. NumRule a
 transposeEwmul _ = do
-  r <- newRClass "r"
+  r <- newSingletonRClass "r"
   sL <- newMap "sL" r
   sR <- newMap "sR" r
   x <- newTensor @a "x" [r --> sL @@ "L", r --> sR @@ "R"]
@@ -55,7 +55,7 @@ transposeEwmul _ = do
 -- transpose(smul(x, w)) = smul(transpose(x), w)
 transposeSmul :: forall a. NumRule a
 transposeSmul _ = do
-  r <- newRClass "r"
+  r <- newSingletonRClass "r"
   sL <- newMap "sL" r
   sR <- newMap "sR" r
   x <- newTensor @a "x" [r --> sL @@ "L", r --> sR @@ "R"]
@@ -67,7 +67,7 @@ transposeSmul _ = do
 -- transpose(relu(x)) = relu(transpose(x))
 transposeRelu :: forall a. NumRule a
 transposeRelu _ = do
-  r <- newRClass "r"
+  r <- newSingletonRClass "r"
   sL <- newMap "sL" r
   sR <- newMap "sR" r
   x <- newTensor @a "x" [r --> sL @@ "L", r --> sR @@ "R"]
@@ -79,7 +79,7 @@ transposeRelu _ = do
 transposeConcat :: forall a. AnyDTypeRule a
 transposeConcat _ = do
   -- Use same rclass with two labels for 2D
-  r <- newRClass "r"
+  r <- newSingletonRClass "r"
   sLx <- newMap "sLx" r
   sRx <- newMap "sRx" r
   sLy <- newMap "sLy" r

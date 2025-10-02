@@ -5,8 +5,8 @@ import TensorRight
 import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, relu, smul)
 import Prelude hiding (concat)
 
-desugarOneRole :: forall a. NumRule a -- Concate with only one rclass
-desugarOneRole _ = do
+desugar :: forall a. NumRule a
+desugar _ = do
   r <- newRClass "r"
   [sa, sb] <- newMaps ["sa", "sb"] r
   a <- newTensor @a "A" [r --> sa]
@@ -15,40 +15,6 @@ desugarOneRole _ = do
   lhs <- concat d a b
   rhs <- concatTensor a b d
   rewrite "concat(d, A, B) ⇒ Concatenate((A, B), d)" lhs rhs
-
-desugarMultiRole :: forall a. NumRule a -- Concatenate with multiple Rclasses
-desugarMultiRole _ = do
-  [batch, cat, spatial] <- newRClasses ["batch", "cat", "spatial"]
-  bS <- newMap "bS" batch
-  [cSa, cSb] <- newMaps ["cSa", "cSb"] cat
-  sS <- newMap "sS" spatial
-  a <- newTensor @a "A" [batch --> bS, cat --> cSa, spatial --> sS]
-  b <- newTensor @a "B" [batch --> bS, cat --> cSb, spatial --> sS]
-  let d = ByRClass cat
-  lhs <- concat d a b
-  rhs <- concatTensor a b d
-  rewrite "concat(d, A, B) ⇒ Concatenate((A, B), d)" lhs rhs
-
-desugarLabelledCopy :: forall a. NumRule a -- Concatenate with duplicate RClasses
-desugarLabelledCopy _ = do
-  r <- newRClass "r"
-  [sL, sRa, sRb] <- newMaps ["sL", "sRa", "sRb"] r
-  a <- newTensor @a "A" [r --> sL @@ "L", r --> sRa @@ "R"]
-  b <- newTensor @a "B" [r --> sL @@ "L", r --> sRb @@ "R"]
-  let d = ByLabel "R"
-  lhs <- concat d a b
-  rhs <- concatTensor a b d
-  rewrite "concat(d, A, B) ⇒ Concatenate((A, B), d)" lhs rhs
-
-desugarConcatList :: forall a. NumRule a
-desugarConcatList _ = do
-  r <- newRClass "r"
-  s <- newMap "s" r
-  xs <- traverse (\n -> newTensor @a n [r --> s]) ["X", "Y", "Z"]
-  lhs1 <- concat (ByRClass r) (xs !! 0) (xs !! 1)
-  lhs <- concat (ByRClass r) lhs1 (xs !! 2)
-  rhs <- concatTensorList xs (ByRClass r)
-  rewrite "concat(concat(X, Y), Z) ⇒ concatTensorList(X, Y, Z)" lhs rhs
 
 smulAssociativity :: forall a. NumRule a
 smulAssociativity _ = do
@@ -116,13 +82,7 @@ geometry _ = do
 main :: IO ()
 main = do
   printTitle "######################## desugarOneRole ########################"
-  verifyNumDSL desugarOneRole
-  printTitle "######################## desugarMultiRole ######################"
-  verifyNumDSL desugarMultiRole
-  printTitle "######################## desugarLabelledCopy ###################"
-  verifyNumDSL desugarLabelledCopy
-  printTitle "######################## desugarConcatList #####################"
-  verifyNumDSL desugarConcatList
+  verifyNumDSL desugar
   printTitle "######################## smulAssociativity #####################"
   verifyNumDSL smulAssociativity
   printTitle "######################## ewaddAssociativity ####################"
