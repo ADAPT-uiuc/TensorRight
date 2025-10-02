@@ -2,6 +2,7 @@ module Main (main) where
 
 import Grisette hiding ((-->))
 import TensorRight
+import TensorRight.Internal.DSL.DSL (newRClass)
 import TensorRight.Internal.DSL.TASO (ewadd, ewmul)
 
 rule01 :: forall a. NumRule a -- Verify desugaring
@@ -46,6 +47,19 @@ rule04 _ = do
   rhs <- ewadd (ewmul x z) (ewmul y z)
   rewrite "ewmul(ewadd(x, y), z) ⇒ ewadd(ewmul(x, z), ewmul(y, z))" lhs rhs
 
+rule05 :: forall a. NumRule a -- Verify identity
+rule05 _ = do
+  rclassN <- newRClass "rclassN"
+  sizeN <- newMap "sizeN" rclassN
+
+  x <- newTensor @a "x" [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"]
+  ones <- constant @a 1 [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"]
+
+  lhs <- ewmul x ones
+  let rhs = x
+
+  rewrite "ewmul(x, I) ⇒ x" lhs rhs
+
 main :: IO ()
 main = do
   printTitle "############################## rule01 ##############################"
@@ -56,3 +70,5 @@ main = do
   verifyNumDSL rule03
   printTitle "############################## rule04 ##############################"
   verifyNumDSL rule04
+  printTitle "############################## rule05 ##############################"
+  verifyNumDSL rule05

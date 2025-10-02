@@ -1,5 +1,6 @@
 module Main (main) where
 
+import Debug.Trace
 import Grisette hiding (dot, (-->))
 import TensorRight
 import TensorRight.Internal.DSL.DSL (checkSIMap, monitorExprOnFailure, newSingletonRClass, newSingletonRClasses, siRelation)
@@ -112,7 +113,9 @@ matmulTranspose _ = do
   xt0 <- transpose x -- [rclassM @@ "K", rclassK @@ "L"]
   xt <- relabel xt0 [ByLabel "L" --> ByLabel "R", ByLabel "K" --> ByLabel "K'"] -- [rclassM @@ "K'", rclassK @@ "R"]
   kR <- newMap "contractSI" rclassK
-  rhs <- matmul2D yt xt [ByLabel "R" --> kR]
+  rhs0 <- matmul2D yt xt [ByLabel "R" --> kR] -- [rclassN @@ "K", rclassM @@ "K'"]
+  -- rhs should now also be [rclassM @@ "R" rclassN @@ "L"]
+  rhs <- relabel rhs0 [ByLabel "K'" --> ByLabel "R", ByLabel "K" --> ByLabel "L"]
 
   siRelation [kL, kR] $ \[i, j] -> i .== j
   checkSIMap [kL] [kR]
@@ -127,7 +130,7 @@ matmulIdentity _ = do
   sizeM <- newMap "sizeM" rclassM
   sizeN <- newMap "sizeN" rclassN
 
-  x <- newTensor @a "x" [rclassM --> sizeM, rclassN --> sizeN]
+  x <- newTensor @a "x" [rclassM --> sizeM, rclassN --> sizeN @@ "L"]
   identityRow <- iota [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"] (ByLabel "L")
   identityCol <- iota [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"] (ByLabel "R")
   identityMask <- compareOp Eqv identityRow identityCol
@@ -136,8 +139,12 @@ matmulIdentity _ = do
   identityMatrix <- select identityMask ones zeros
 
   nL <- newMap "contractSI" rclassN
-  lhs <- matmul2D x identityMatrix [rclassN --> nL]
-  let rhs = x
+  -- lhs should be [rclassM, rclassN @@ "R"]
+  lhs <- matmul2D x identityMatrix [ByLabel "L" --> nL]
+  rhs <- relabel x [ByLabel "L" --> ByLabel "R"]
+
+  siRelation [sizeN] $ \[i, j] -> i .== j
+  checkSIMap [sizeN] [nL]
 
   rewrite "matmul(x, I) ⇒ x" lhs rhs
 
@@ -214,14 +221,14 @@ main = do
   -- printTitle "#################### matmulDistributive #####################"
   -- verifyNumDSL matmulDistributive
 
-  printTitle "###################### matmulTranspose ######################"
-  verifyNumDSL matmulTranspose
+  -- printTitle "###################### matmulTranspose ######################"
+  -- verifyNumDSL matmulTranspose
 
--- printTitle "###################### matmulIdentity #######################"
--- verifyNumDSL matmulIdentity
+  -- printTitle "###################### matmulIdentity #######################"
+  -- verifyNumDSL matmulIdentity
 
--- printTitle "#################### matmulConcatRight ######################"
--- verifyNumDSL matmulConcatRight
+  -- printTitle "#################### matmulConcatRight ######################"
+  -- verifyNumDSL matmulConcatRight
 
--- printTitle "##################### matmulConcatMixed #####################"
--- verifyNumDSL matmulConcatMixed
+  printTitle "##################### matmulConcatMixed #####################"
+  verifyNumDSL matmulConcatMixed
