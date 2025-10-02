@@ -38,14 +38,13 @@ import TensorRight.Internal.DSL.DSL
     combineMap,
     matmul2DHelper,
     newConstMap,
-    newNonNegMap,
     numBinOp,
     numBinScalarOp,
     pad,
     precondition,
     transpose2D,
   )
-import TensorRight.Internal.DSL.Expr (getRClassByMap)
+import TensorRight.Internal.DSL.Expr (checkMapHasRClass, getRClassByMap)
 import TensorRight.Internal.DSL.Identifier (MapIdentifier)
 import TensorRight.Internal.DSL.Parameters (ParamDesc (..))
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
@@ -110,7 +109,8 @@ transpose ::
   DSLContext Expr
 transpose = transpose2D
 
--- | TASO's enlarge operator
+-- TASO's enlarge operator!
+-- Split policy: low = floor(d/2), high = d - low, where d = max(s, k) - s per axis.
 enlarge ::
   forall a e.
   (ExprInContext e, ValidNum a) =>
@@ -118,6 +118,10 @@ enlarge ::
   ParamDesc ->
   -- | Size descriptor for W axis: provides the axis ref and the existing size map of A along W.
   ParamDesc ->
+  -- | Pre-allocated low padding map for H.
+  MapIdentifier ->
+  -- | Pre-allocated low padding map for W.
+  MapIdentifier ->
   -- | Target size ky for H (abstract scalar).
   SymInteger ->
   -- | Target size kx for W (abstract scalar).
@@ -125,28 +129,32 @@ enlarge ::
   -- | The tensor to enlarge.
   e ->
   DSLContext Expr
-enlarge (ParamDesc hRef sH) (ParamDesc wRef sW) ky kx e = do
-  -- Promote scalars kx, ky to constant maps on the corresponding rclasses
+enlarge (ParamDesc hRef sH) (ParamDesc wRef sW) hLow wLow ky kx e = do
   rH <- getRClassByMap sH
   rW <- getRClassByMap sW
+  -- Ensure provided low maps match rclasses
+  checkMapHasRClass rH hLow
+  checkMapHasRClass rW wLow
+
+  -- Promote scalars
   kH <- newConstMap "kH" ky rH
   kW <- newConstMap "kW" kx rW
+  precondition [kH] $ \[k] -> k .>= 0
+  precondition [kW] $ \[k] -> k .>= 0
 
   -- Target sizes via max
   sH' <- combineMap "sH'" (\[a, k] -> symIte (a .>= k) a k) [sH, kH]
   sW' <- combineMap "sW'" (\[a, k] -> symIte (a .>= k) a k) [sW, kW]
 
-  -- Differences to pad
+  -- Differences
   dH <- combineMap "dH" (\[m, a] -> m - a) [sH', sH]
   dW <- combineMap "dW" (\[m, a] -> m - a) [sW', sW]
 
-  -- Odd-difference split: low = floor(d/2), high = ceil(d/2)
-  hLow <- newNonNegMap "hLow" rH
-  hHigh <- newNonNegMap "hHigh" rH
-  precondition [hLow, hHigh, dH] $ \[l, h, d] -> l + h .== d .&& l .<= h .&& h .<= l + 1 -- Make precondition to ensure left over padding on top
-  wLow <- newNonNegMap "wLow" rW
-  wHigh <- newNonNegMap "wHigh" rW
-  precondition [wLow, wHigh, dW] $ \[l, h, d] -> l + h .== d .&& l .<= h .&& h .<= l + 1
+  -- Determine splits and construct high end based on them
+  precondition [hLow, dH] $ \[l, d] -> (l + l) .<= d .&& d .<= (l + l + 1)
+  precondition [wLow, dW] $ \[l, d] -> (l + l) .<= d .&& d .<= (l + l + 1)
+  hHigh <- combineMap "hHigh" (\[d, l] -> d - l) [dH, hLow]
+  wHigh <- combineMap "wHigh" (\[d, l] -> d - l) [dW, wLow]
 
   -- Zero interior paddings
   zH <- newConstMap "zeroH" 0 rH
@@ -155,7 +163,7 @@ enlarge (ParamDesc hRef sH) (ParamDesc wRef sW) ky kx e = do
   pad e (0 :: a) $
     Padding
       { low = [hRef --> hLow, wRef --> wLow],
-        interior = [hRef --> zH, wRef --> zW], -- No internal padding
+        interior = [hRef --> zH, wRef --> zW],
         high = [hRef --> hHigh, wRef --> wHigh]
       }
 
@@ -166,5 +174,37 @@ matmul2D ::
   lhs ->
   -- | The right-hand side tensor (shape [K, N])
   rhs ->
-  DSLContext (Expr, MapIdentifier)
+  -- | The contracting SI maps.
+  [ParamDesc] ->
+  DSLContext Expr
 matmul2D = matmul2DHelper
+
+-- -- | TASO's 2D matrix multiplication operator
+-- tasoConv ::
+--   (ExprInContext input, ExprInContext weights, ValidNum a) =>
+--   -- | The input tensor.
+--   input ->
+--   -- | The weights (kernel) tensor.
+--   weights ->
+--   a ->
+--   ConvRes a
+
+-- -- | TASO's split0 operator
+-- split0 ::
+--   (ExprInContext e) =>
+--   -- | The aggregated-axis to split on.
+--   RClassRef ->
+--   -- | The tensor to split.
+--   e ->
+--   DSLContext Expr
+-- split0 = undefined
+
+-- -- | TASO's split0 operator
+-- split1 ::
+--   (ExprInContext e) =>
+--   -- | The aggregated-axis to split on.
+--   RClassRef ->
+--   -- | The tensor to split.
+--   e ->
+--   DSLContext Expr
+-- split1 = undefined
