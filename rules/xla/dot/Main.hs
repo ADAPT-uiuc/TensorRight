@@ -1,6 +1,5 @@
 module Main (main) where
 
-import Debug.Trace (traceShow)
 import Grisette hiding (dot, (-->))
 import TensorRight
 

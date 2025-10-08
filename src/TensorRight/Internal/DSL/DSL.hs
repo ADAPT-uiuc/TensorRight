@@ -90,6 +90,7 @@ module TensorRight.Internal.DSL.DSL
     reshapeDegenerate,
     numTensorAssumption,
     ExprInContext,
+    liftInContext,
   )
 where
 
@@ -100,7 +101,6 @@ import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
 import Data.String (IsString)
 import qualified Data.Text as T
-import Debug.Trace (traceM)
 import Grisette
   ( Mergeable,
     SymBool,
@@ -1221,13 +1221,6 @@ dot lhs rhs contractingSIMapsDesc batchRClasses = do
     let dotAllRefs = HM.keysSet contractingSIMaps <> HS.fromList batchRClasses
     let lhsAllRefs = abstractShapeAllRefs shapeLhs
     let rhsAllRefs = abstractShapeAllRefs shapeRhs
-
-    traceM $ "batchRClasses" ++ show batchRClasses
-    traceM $ "contractingSIMaps" ++ show contractingSIMaps
-    traceM $ "lhsRefs" ++ show lhsAllRefs
-    traceM $ "rhsRefs" ++ show rhsAllRefs
-    traceM $ "dotAllRefs" ++ show dotAllRefs
-    traceM $ "intersection" ++ show (HS.intersection lhsAllRefs rhsAllRefs)
 
     assert
       ( "Contraction + batch rclasses must be exactly the interaction of lhs and "

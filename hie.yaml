@@ -51,6 +51,19 @@ cradle:
     - path: "./rules/taso/transpose/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-transpose"
 
+    - path: "./rules/taso/matmul2D/Main.hs"
+      component: "tensor-right:exe:rules-taso-matmul2D"
+
+    - path: "./rules/taso/matmul2D/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-matmul2D"
+
+    - path: "./rules/taso/matmul3D/Main.hs"
+      component: "tensor-right:exe:rules-taso-matmul3D"
+
+    - path: "./rules/taso/matmul3D/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-matmul3D"
+
+
     - path: "./rules/xla/add/Main.hs"
       component: "tensor-right:exe:rules-xla-add"
 
@@ -188,6 +201,12 @@ cradle:
 
     - path: "./rules/xla/sub/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-sub"
+
+    - path: "./rules/xla/split/Main.hs"
+      component: "tensor-right:exe:rules-xla-split"
+
+    - path: "./rules/xla/split/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-xla-split"
 
     - path: "./test"
       component: "tensor-right:test:spec"
