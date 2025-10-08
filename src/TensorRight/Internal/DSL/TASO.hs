@@ -18,17 +18,23 @@ module TensorRight.Internal.DSL.TASO
     smul,
     relu,
     concat,
+    split0,
+    split1,
     transpose,
     enlarge,
     matmul2D,
+    matmul3D,
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Grisette (SymInteger, symIte, (.&&), (.<=), (.==), (.>=))
 import TensorRight (NumBinOp (Add, Mul), ToElem, concatTensor, posInf)
 import TensorRight.Internal.Core.Tensor (ToDType)
 import TensorRight.Internal.DSL.DSL
-  ( DSLContext,
+  ( ConvConfig,
+    ConvPadding,
+    DSLContext,
     Expr,
     ExprInContext,
     Padding (..),
@@ -36,7 +42,10 @@ import TensorRight.Internal.DSL.DSL
     ValidNum,
     clampScalar,
     combineMap,
+    conv,
+    liftInContext,
     matmul2DHelper,
+    matmul3DHelper,
     newConstMap,
     numBinOp,
     numBinScalarOp,
@@ -44,11 +53,16 @@ import TensorRight.Internal.DSL.DSL
     precondition,
     transpose2D,
   )
-import TensorRight.Internal.DSL.Expr (checkMapHasRClass, getRClassByMap)
+import TensorRight.Internal.DSL.Expr (Expr, UExpr, checkMapHasRClass, getRClassByMap)
+import qualified TensorRight.Internal.DSL.Expr as E
 import TensorRight.Internal.DSL.Identifier (MapIdentifier)
 import TensorRight.Internal.DSL.Parameters (ParamDesc (..))
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import Prelude hiding (concat)
+
+data Activation = Relu | None
+
+data PaddingMode = Same | Valid
 
 -- | TASO's ewadd operator. The lhs and rhs must have the same shape and the type must be either 'IntType' or 'RealType'.
 ewadd ::
@@ -179,32 +193,62 @@ matmul2D ::
   DSLContext Expr
 matmul2D = matmul2DHelper
 
+-- | TASO's 2D matrix multiplication operator
+matmul3D ::
+  (ExprInContext lhs, ExprInContext rhs) =>
+  -- | The left-hand side tensor (shape [M, K])
+  lhs ->
+  -- | The right-hand side tensor (shape [K, N])
+  rhs ->
+  -- | The contracting SI maps.
+  [ParamDesc] ->
+  -- | Batch RClasses
+  [RClassRef] ->
+  DSLContext Expr
+matmul3D = matmul3DHelper
+
 -- -- | TASO's 2D matrix multiplication operator
 -- tasoConv ::
 --   (ExprInContext input, ExprInContext weights, ValidNum a) =>
---   -- | The input tensor.
+--   ConvConfig ->
+--   -- | Convolution padding config
+--   PaddingMode ->
+--   -- | Choice of activation function
+--   Activation ->
+--   -- | Input tensor
 --   input ->
 --   -- | The weights (kernel) tensor.
 --   weights ->
---   a ->
---   ConvRes a
-
--- -- | TASO's split0 operator
--- split0 ::
---   (ExprInContext e) =>
---   -- | The aggregated-axis to split on.
---   RClassRef ->
---   -- | The tensor to split.
---   e ->
 --   DSLContext Expr
--- split0 = undefined
+-- tasoConv convConfig padConfig act input weights = do
+--   -- Construct padding config based on inputs
+--   let out_expr = conv input weights padConfig
+--   case act of
+--     Relu -> relu out_expr
+--     _ -> out_expr
 
--- -- | TASO's split0 operator
--- split1 ::
---   (ExprInContext e) =>
---   -- | The aggregated-axis to split on.
---   RClassRef ->
---   -- | The tensor to split.
---   e ->
---   DSLContext Expr
--- split1 = undefined
+-- | TASO's split0 operator
+split0 ::
+  (ExprInContext e) =>
+  RClassRef ->
+  e ->
+  DSLContext Expr
+split0 axis e' = do
+  e <- liftInContext e'
+  case e of
+    E.Concat _ l _ d | d == axis -> return l
+    E.Concat {} -> throwError "split0: expected Concat on the given axis"
+    _ -> throwError "split0: input is not a Concat"
+
+-- | TASO's split1 operator
+split1 ::
+  (ExprInContext e) =>
+  RClassRef ->
+  e ->
+  DSLContext Expr
+split1 axis e' = do
+  e <- liftInContext e'
+  case e of
+    E.Concat _ _ r d | d == axis -> return r
+    E.Concat {} -> throwError "split1: expected Concat on the given axis"
+    _ -> throwError "split1: input is not a Concat"
