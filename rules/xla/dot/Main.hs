@@ -103,7 +103,7 @@ rule03 _ = do
   siRelation [sibcLhs, sibcRhs] $ \[vsibcLhs, vsibcRhs] -> vsibcLhs .== vsibcRhs
   checkSIMap [siabLhs, sibcLhs] [siabRhs, sibcRhs]
 
-  rewrite "Dot(A,Dot(B,C)) ⇒ Dot(Dot(A,B),C)" lhs lhs
+  rewrite "Dot(A,Dot(B,C)) ⇒ Dot(Dot(A,B),C)" lhs rhs
 
 rule04 :: forall a. NumRule a
 rule04 _ = do
