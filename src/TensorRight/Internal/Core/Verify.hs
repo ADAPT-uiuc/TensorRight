@@ -309,7 +309,7 @@ verifyRule
           return False
         Right m -> do
           pprint m
-          printWarning $ "SI-relation is not bijective. (There exist multiple left SI for a right SI.)"
+          printWarning "SI-relation is not bijective. (There exist multiple left SI for a right SI.)"
           return False
 
       condr2l <-
@@ -331,7 +331,7 @@ verifyRule
           return False
         Right m -> do
           pprint m
-          printWarning $ "SI-relation is not bijective. (There exist multiple right SI for a left SI.)"
+          printWarning "SI-relation is not bijective. (There exist multiple right SI for a left SI.)"
           return False
 
       if bil2r && bir2l
@@ -356,7 +356,7 @@ verifyRule
               return False
             Right m -> do
               pprint m
-              printWarning $ "Some left si cannot be accessed."
+              printWarning "Some left si cannot be accessed."
               return False
           condr <-
             evaluate $
@@ -378,12 +378,12 @@ verifyRule
               return False
             Right m -> do
               pprint m
-              printWarning $ "Some right si cannot be accessed."
+              printWarning "Some right si cannot be accessed."
               return False
           unless (allokl && allokr) $
-            printWarning $
+            printWarning
               "Some SI cannot be accessed."
-        else printWarning $ "SI-relation is not bijective."
+        else printWarning "SI-relation is not bijective."
 
     cond1 <-
       evaluate $

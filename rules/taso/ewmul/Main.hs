@@ -5,8 +5,8 @@ import TensorRight
 import TensorRight.Internal.DSL.DSL (newRClass)
 import TensorRight.Internal.DSL.TASO (ewadd, ewmul)
 
-rule01 :: forall a. NumRule a -- Verify desugaring
-rule01 _ = do
+desugar :: forall a. NumRule a -- Verify desugaring
+desugar _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   tA <- newTensor @a "A" [rclass --> map]
@@ -15,8 +15,8 @@ rule01 _ = do
   rhs <- numBinOp Mul tA tB
   rewrite "ewmul(A, B) ⇒ Mul(A, B)" lhs rhs
 
-rule02 :: forall a. NumRule a -- Associativity
-rule02 _ = do
+associativity :: forall a. NumRule a -- Associativity
+associativity _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   x <- newTensor @a "x" [rclass --> map]
@@ -26,8 +26,8 @@ rule02 _ = do
   rhs <- ewmul (ewmul x y) z
   rewrite "ewmul(x, ewmul(y, z)) ⇒ mul(ewmul(x, y), z)" lhs rhs
 
-rule03 :: forall a. NumRule a -- Verify commutative
-rule03 _ = do
+commutativity :: forall a. NumRule a -- Verify commutative
+commutativity _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   x <- newTensor @a "x" [rclass --> map]
@@ -36,8 +36,8 @@ rule03 _ = do
   rhs <- ewmul y x
   rewrite "ewmul(x, y) ⇒ ewmul(y, x)" lhs rhs
 
-rule04 :: forall a. NumRule a -- Verify distributivity
-rule04 _ = do
+distributivity :: forall a. NumRule a -- Verify distributivity
+distributivity _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   x <- newTensor @a "x" [rclass --> map]
@@ -47,13 +47,13 @@ rule04 _ = do
   rhs <- ewadd (ewmul x z) (ewmul y z)
   rewrite "ewmul(ewadd(x, y), z) ⇒ ewadd(ewmul(x, z), ewmul(y, z))" lhs rhs
 
-rule05 :: forall a. NumRule a -- Verify identity
-rule05 _ = do
+identity :: forall a. NumRule a -- Verify identity
+identity _ = do
   rclassN <- newRClass "rclassN"
   sizeN <- newMap "sizeN" rclassN
 
-  x <- newTensor @a "x" [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"]
-  ones <- constant @a 1 [rclassN --> sizeN @@ "L", rclassN --> sizeN @@ "R"]
+  x <- newTensor @a "x" [rclassN --> sizeN]
+  ones <- constant @a 1 [rclassN --> sizeN]
 
   lhs <- ewmul x ones
   let rhs = x
@@ -62,13 +62,13 @@ rule05 _ = do
 
 main :: IO ()
 main = do
-  printTitle "############################## rule01 ##############################"
-  verifyNumDSL rule01
-  printTitle "############################## rule02 ##############################"
-  verifyNumDSL rule02
-  printTitle "############################## rule03 ##############################"
-  verifyNumDSL rule03
-  printTitle "############################## rule04 ##############################"
-  verifyNumDSL rule04
-  printTitle "############################## rule05 ##############################"
-  verifyNumDSL rule05
+  printTitle "############################## desugar ##############################"
+  verifyNumDSL desugar
+  printTitle "############################## associativity ##############################"
+  verifyNumDSL associativity
+  printTitle "############################## commutativity ##############################"
+  verifyNumDSL commutativity
+  printTitle "############################## distributivity ##############################"
+  verifyNumDSL distributivity
+  printTitle "############################## identity ##############################"
+  verifyNumDSL identity

@@ -2,8 +2,8 @@ import Grisette hiding ((-->))
 import TensorRight
 import TensorRight.Internal.DSL.TASO (relu)
 
-rule01 :: forall a. NumRule a -- Verify desugaring
-rule01 _ = do
+desugar :: forall a. NumRule a -- Verify desugaring
+desugar _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   tA <- newTensor @a "A" [rclass --> map]
@@ -13,5 +13,5 @@ rule01 _ = do
 
 main :: IO ()
 main = do
-  printTitle "############################## rule01 ##############################"
-  verifyNumDSL rule01
+  printTitle "############################## desugar ##############################"
+  verifyNumDSL desugar

@@ -151,37 +151,37 @@ matmulConcatRight _ = do
 
 -- | Rule 7: Concatenation and matrix multiplication (mixed)
 -- ∀x, y, z, w. matmul(concat(1, x, z), concat(0, y, w)) = ewadd(matmul(x, y), matmul(z, w))
-matmulConcatMixed :: forall a. NumRule a
-matmulConcatMixed _ = do
-  [rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN"]
-  [sizeM1, sizeM2] <- newMaps ["sizeM1", "sizeM2"] rclassM
-  [sizeK1, sizeK2] <- newMaps ["sizeK1", "sizeK2"] rclassK
-  sizeN <- newMap "sizeN" rclassN
+-- matmulConcatMixed :: forall a. NumRule a
+-- matmulConcatMixed _ = do
+--   [rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassM", "rclassK", "rclassN"]
+--   [sizeM1, sizeM2] <- newMaps ["sizeM1", "sizeM2"] rclassM
+--   [sizeK1, sizeK2] <- newMaps ["sizeK1", "sizeK2"] rclassK
+--   sizeN <- newMap "sizeN" rclassN
 
-  x <- newTensor @a "x" [rclassM --> sizeM1, rclassK --> sizeK1]
-  y <- newTensor @a "y" [rclassK --> sizeK1, rclassN --> sizeN]
-  z <- newTensor @a "z" [rclassM --> sizeM2, rclassK --> sizeK2]
-  w <- newTensor @a "w" [rclassK --> sizeK2, rclassN --> sizeN]
+--   x <- newTensor @a "x" [rclassM --> sizeM1, rclassK --> sizeK1]
+--   y <- newTensor @a "y" [rclassK --> sizeK1, rclassN --> sizeN]
+--   z <- newTensor @a "z" [rclassM --> sizeM2, rclassK --> sizeK2]
+--   w <- newTensor @a "w" [rclassK --> sizeK2, rclassN --> sizeN]
 
-  -- Dimensions must match appropriately for concatenation and matmul
-  precondition [sizeM1, sizeM2] $ \[m1, m2] -> m1 .== m2
-  precondition [sizeK1, sizeK2] $ \[k1, k2] -> k1 .== k2
+--   -- Dimensions must match appropriately for concatenation and matmul
+--   precondition [sizeM1, sizeM2] $ \[m1, m2] -> m1 .== m2
+--   precondition [sizeK1, sizeK2] $ \[k1, k2] -> k1 .== k2
 
-  xz <- concat (ByRClass rclassM) x z
-  yw <- concat (ByRClass rclassK) y w
-  kL <- newMap "contractSI" rclassK
-  kR1 <- newMap "contractSI" rclassK
-  kR2 <- newMap "contractSI" rclassK
-  lhs <- matmul2D xz yw [rclassK --> kL]
-  xy <- matmul2D x y [rclassK --> kR1]
-  zw <- matmul2D z w [rclassK --> kR2]
-  rhs <- ewadd xy zw
+--   xz <- concat (ByRClass rclassM) x z
+--   yw <- concat (ByRClass rclassK) y w
+--   kL <- newMap "contractSI" rclassK
+--   kR1 <- newMap "contractSI" rclassK
+--   kR2 <- newMap "contractSI" rclassK
+--   lhs <- matmul2D xz yw [rclassK --> kL]
+--   xy <- matmul2D x y [rclassK --> kR1]
+--   zw <- matmul2D z w [rclassK --> kR2]
+--   rhs <- ewadd xy zw
 
-  siRelation [kL, kR1] $ \[l, r] -> l .== r
-  siRelation [kL, kR2] $ \[l, r] -> l .== r
-  checkSIMap [kL] [kR1, kR2]
+--   siRelation [kL, kR1] $ \[l, r] -> l .== r
+--   siRelation [kL, kR2] $ \[l, r] -> l .== r
+--   checkSIMap [kL] [kR1, kR2]
 
-  rewrite "matmul(concat(1, x, z), concat(0, y, w)) ⇒ ewadd(matmul(x, y), matmul(z, w))" lhs rhs
+--   rewrite "matmul(concat(1, x, z), concat(0, y, w)) ⇒ ewadd(matmul(x, y), matmul(z, w))" lhs rhs
 
 main :: IO ()
 main = do

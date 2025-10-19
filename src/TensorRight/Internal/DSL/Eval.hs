@@ -176,7 +176,7 @@ freshMapBase name mapBase =
       HM.map
         ( \(SymInteger (SymTerm (TypedSymbol s :: TypedSymbol knd a))) ->
             SymInteger $
-              SymTerm $
+              SymTerm
                 ( TypedSymbol $
                     mapIdentifier
                       (mapMetadata (\m -> List [Atom "fresh", Atom $ T.pack name, m]))
