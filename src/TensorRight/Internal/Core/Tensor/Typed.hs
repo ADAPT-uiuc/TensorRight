@@ -637,9 +637,9 @@ sliceStartEndStrides to SliceArgs {..} = do
               restrictAxes diffDims (fromHashMap valMap)
         return $ unionAxisMap indices emptyIndices
   let defaultMap val = HM.fromList . map (,val) . HS.toList
-  filledStart <- checkAndFillInAxes "start" start $ (defaultMap 0 axes)
+  filledStart <- checkAndFillInAxes "start" start $ defaultMap 0 axes
   filledEnd <- checkAndFillInAxes "end" end $ asHashMap (tensorShape t)
-  filledStrides <- checkAndFillInAxes "strides" strides $ (defaultMap 1 axes)
+  filledStrides <- checkAndFillInAxes "strides" strides $ defaultMap 1 axes
 
   assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap filledStart
   -- The original Rosette implementation may be buggy here.
@@ -1138,6 +1138,9 @@ clamp mino to maxo = do
           case (minElem, tElem, maxElem) of
             (TensorElemVal minSym, TensorElemVal tSym, TensorElemVal maxSym) ->
               mrgReturn $ TensorElemVal $ tensorValSymMin maxSym $ tensorValSymMax tSym minSym
+            (TensorElemVal minSym, TensorElemSum tSym, TensorElemVal maxSym) ->
+              -- Special case with contraction
+              mrgReturn $ TensorElemSum $ tensorValSymMin maxSym $ tensorValSymMax tSym minSym
             _ -> error "Not implemented"
       )
       (tensorShape t)

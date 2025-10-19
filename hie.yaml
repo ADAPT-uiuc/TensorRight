@@ -63,6 +63,12 @@ cradle:
     - path: "./rules/taso/matmul3D/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-matmul3D"
 
+    - path: "./rules/taso/conv/Main.hs"
+      component: "tensor-right:exe:rules-taso-conv"
+
+    - path: "./rules/taso/conv/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-conv"
+
 
     - path: "./rules/xla/add/Main.hs"
       component: "tensor-right:exe:rules-xla-add"

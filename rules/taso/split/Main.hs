@@ -6,8 +6,8 @@ import TensorRight.Internal.DSL.DSL (checkSIMap, monitorExprOnFailure, newRClass
 import TensorRight.Internal.DSL.TASO (concat, split0, split1)
 import Prelude hiding (concat)
 
-rule_split0 :: forall a. NumRule a -- Verify desugaring
-rule_split0 _ = do
+split0_desugar :: forall a. NumRule a -- Verify desugaring
+split0_desugar _ = do
   [rclassM, rclassN] <- newRClasses ["rclassM", "rclassN"]
   sizeM1 <- newMap "sizeM1" rclassM
   sizeM2 <- newMap "sizeM2" rclassM
@@ -23,8 +23,8 @@ rule_split0 _ = do
 
   rewrite "split_0(a, concat(a, x, y)) ⇒ x" lhs rhs
 
-rule_split1 :: forall a. NumRule a -- Verify desugaring
-rule_split1 _ = do
+split1_desugar :: forall a. NumRule a -- Verify desugaring
+split1_desugar _ = do
   [rclassM, rclassN] <- newRClasses ["rclassM", "rclassN"]
   sizeM1 <- newMap "sizeM1" rclassM
   sizeM2 <- newMap "sizeM2" rclassM
@@ -42,7 +42,7 @@ rule_split1 _ = do
 
 main :: IO ()
 main = do
-  printTitle "#################### split0 ####################"
-  verifyNumDSL rule_split0
-  printTitle "#################### split1 ####################"
-  verifyNumDSL rule_split1
+  printTitle "#################### split0 desguar ####################"
+  verifyNumDSL split0_desugar
+  printTitle "#################### split1 desugar ####################"
+  verifyNumDSL split1_desugar

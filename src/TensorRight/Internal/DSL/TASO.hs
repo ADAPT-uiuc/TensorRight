@@ -22,23 +22,26 @@ module TensorRight.Internal.DSL.TASO
     split1,
     transpose,
     enlarge,
+    tasoConv,
     matmul2D,
     matmul3D,
+    PaddingMode (..),
+    Activation (..),
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Grisette (SymInteger, symIte, (.&&), (.<=), (.==), (.>=))
+import Grisette (SymInteger, symIte, (.&&), (.<), (.<=), (.==), (.>=))
 import TensorRight (NumBinOp (Add, Mul), ToElem, concatTensor, posInf)
 import TensorRight.Internal.Core.Tensor (ToDType)
 import TensorRight.Internal.DSL.DSL
-  ( ConvConfig,
-    ConvPadding,
+  ( ConvConfig (..),
+    ConvPadding (..),
     DSLContext,
     Expr,
     ExprInContext,
     Padding (..),
-    RClassRef,
+    RClassRef (..),
     ValidNum,
     clampScalar,
     combineMap,
@@ -47,13 +50,14 @@ import TensorRight.Internal.DSL.DSL
     matmul2DHelper,
     matmul3DHelper,
     newConstMap,
+    newNonNegMap,
     numBinOp,
     numBinScalarOp,
     pad,
     precondition,
     transpose2D,
   )
-import TensorRight.Internal.DSL.Expr (Expr, UExpr, checkMapHasRClass, getRClassByMap)
+import TensorRight.Internal.DSL.Expr (checkMapHasRClass, getRClassByMap)
 import qualified TensorRight.Internal.DSL.Expr as E
 import TensorRight.Internal.DSL.Identifier (MapIdentifier)
 import TensorRight.Internal.DSL.Parameters (ParamDesc (..))
@@ -63,6 +67,10 @@ import Prelude hiding (concat)
 data Activation = Relu | None
 
 data PaddingMode = Same | Valid
+
+-- Helper function to get MapIdentifier from stride ParamDesc
+getStrideMap :: ParamDesc -> MapIdentifier
+getStrideMap (ParamDesc _ map) = map
 
 -- | TASO's ewadd operator. The lhs and rhs must have the same shape and the type must be either 'IntType' or 'RealType'.
 ewadd ::
@@ -207,25 +215,175 @@ matmul3D ::
   DSLContext Expr
 matmul3D = matmul3DHelper
 
--- -- | TASO's 2D matrix multiplication operator
--- tasoConv ::
---   (ExprInContext input, ExprInContext weights, ValidNum a) =>
---   ConvConfig ->
---   -- | Convolution padding config
---   PaddingMode ->
---   -- | Choice of activation function
---   Activation ->
---   -- | Input tensor
---   input ->
---   -- | The weights (kernel) tensor.
---   weights ->
---   DSLContext Expr
--- tasoConv convConfig padConfig act input weights = do
---   -- Construct padding config based on inputs
---   let out_expr = conv input weights padConfig
---   case act of
---     Relu -> relu out_expr
---     _ -> out_expr
+-- | TASO's 2D matrix multiplication operator
+tasoConv ::
+  forall a input weights.
+  (ExprInContext input, ExprInContext weights, ValidNum a) =>
+  -- | Convolution config
+  ConvConfig ->
+  -- | Padding config
+  PaddingMode ->
+  -- | Choice of activation function
+  Activation ->
+  -- | Input spatial size maps (per spatial RClass)
+  [ParamDesc] ->
+  -- | Kernel spatial size maps (per spatial RClass)
+  [ParamDesc] ->
+  -- | Input tensor
+  input ->
+  -- | The weights (kernel) tensor.
+  weights ->
+  DSLContext Expr
+tasoConv config padConfig act inputSizePDs kernelSizePDs input weights = do
+  -- Determine spatial refs from the stride descriptors in the config
+  let strideRefs =
+        case config of
+          ConvConfig {strides = ss} -> [ref | ParamDesc ref _ <- ss]
+
+  let toRClassId ref = case ref of
+        ByRClass r -> return r
+        ByLabel _ -> throwError "tasoConv requires strides specified with ByRClass refs"
+
+  -- Build padding parameters per mode
+  (lowPDs, ldilPDs, highPDs, rdilPDs) <- case padConfig of
+    Valid -> do
+      -- VALID: low=0, high=0, ldilation=1, rdilation=1
+      lowPDs <-
+        traverse
+          ( \ref -> do
+              r <- toRClassId ref
+              z <- newConstMap "low0" 0 r
+              return (ref --> z)
+          )
+          strideRefs
+      highPDs <-
+        traverse
+          ( \ref -> do
+              r <- toRClassId ref
+              z <- newConstMap "high0" 0 r
+              return (ref --> z)
+          )
+          strideRefs
+      ldilPDs <-
+        traverse
+          ( \ref -> do
+              r <- toRClassId ref
+              o <- newConstMap "ldilation1" 1 r
+              return (ref --> o)
+          )
+          strideRefs
+      rdilPDs <-
+        traverse
+          ( \ref -> do
+              r <- toRClassId ref
+              o <- newConstMap "rdilation1" 1 r
+              return (ref --> o)
+          )
+          strideRefs
+      return (lowPDs, ldilPDs, highPDs, rdilPDs)
+    Same -> do
+      -- SAME: compute padding using the formula: p_total = max(0, (ceil(n_in/s) - 1) * s + k - n_in)
+      -- For each spatial dimension, we need input size, kernel size, and stride
+      let strideMaps = [getStrideMap pd | pd <- strides config]
+
+      -- Use provided input/kernel size maps (deterministic SAME)
+      let lookupSize :: RClassRef -> [ParamDesc] -> MapIdentifier
+          lookupSize ref pds =
+            case [m | ParamDesc r m <- pds, r == ref] of
+              (m : _) -> m
+              [] -> error "tasoConv(Same): missing spatial size map"
+
+      let inputSizePairs = [(ref, lookupSize ref inputSizePDs) | ref <- strideRefs]
+      let kernelSizePairs = [(ref, lookupSize ref kernelSizePDs) | ref <- strideRefs]
+
+      -- Create symbolic output size maps for SAME padding
+      -- For SAME padding, output_size = ceil(input_size / stride)
+      outputSizePairs <-
+        traverse
+          ( \((ref, inputSize), strideMap) -> do
+              r <- toRClassId ref
+              outputSize <- newNonNegMap "outputSize" r
+              -- Constrain: outputSize * stride >= inputSize (ceiling property)
+              precondition [outputSize, inputSize, strideMap] $ \[out, inp, str] -> out * str .>= inp
+              -- Constrain: (outputSize - 1) * stride < inputSize (minimal ceiling)
+              precondition [outputSize, inputSize, strideMap] $ \[out, inp, str] -> (out - 1) * str .< inp
+              return (ref, outputSize)
+          )
+          (zip inputSizePairs strideMaps)
+
+      -- Compute total padding using the SAME formula
+      -- p_total = max(0, (outputSize - 1) * stride + kernelSize - inputSize)
+      totalPaddingPairs <-
+        traverse
+          ( \((ref, outputSize), (_, kernelSize), ((_, inputSize), strideMap)) -> do
+              -- Compute total padding: (outputSize - 1) * stride + kernelSize - inputSize
+              totalPadding <- combineMap "totalPadding" (\[out, s, k, n] -> (out - 1) * s + k - n) [outputSize, strideMap, kernelSize, inputSize]
+              -- Constrain total padding to be non-negative
+              precondition [totalPadding] $ \[p] -> p .>= 0
+              return (ref, totalPadding)
+          )
+          (zip3 outputSizePairs kernelSizePairs (zip inputSizePairs strideMaps))
+
+      -- Split total padding into low and high: low = floor(p_total / 2), high = p_total - low
+      lowPairs <-
+        traverse
+          ( \(ref, totalPadding) -> do
+              r <- toRClassId ref
+              low <- newNonNegMap "sameLow" r
+              -- Constrain: low + low <= totalPadding <= low + low + 1
+              precondition [low, totalPadding] $ \[l, p] -> (l + l) .<= p .&& p .<= (l + l + 1)
+              return (ref, low)
+          )
+          totalPaddingPairs
+
+      highPairs <-
+        traverse
+          ( \((ref, totalPadding), (_, low)) -> do
+              r <- toRClassId ref
+              high <- newNonNegMap "sameHigh" r
+              -- Constrain: low + high = totalPadding
+              precondition [low, high, totalPadding] $ \[l, h, p] -> l + h .== p
+              return (ref, high)
+          )
+          (zip totalPaddingPairs lowPairs)
+
+      let lowPDs = [ref --> l | (ref, l) <- lowPairs]
+      let highPDs = [ref --> h | (ref, h) <- highPairs]
+
+      -- Unit dilations
+      ldilPDs <-
+        traverse
+          ( \ref -> do
+              r <- toRClassId ref
+              o <- newConstMap "ldilation1" 1 r
+              return (ref --> o)
+          )
+          strideRefs
+      rdilPDs <-
+        traverse
+          ( \ref -> do
+              r <- toRClassId ref
+              o <- newConstMap "rdilation1" 1 r
+              return (ref --> o)
+          )
+          strideRefs
+      return (lowPDs, ldilPDs, highPDs, rdilPDs)
+
+  outExpr <-
+    conv
+      input
+      weights
+      config
+      ConvPadding
+        { low = lowPDs,
+          ldilation = ldilPDs,
+          high = highPDs,
+          rdilation = rdilPDs
+        }
+
+  case act of
+    Relu -> relu @a outExpr
+    None -> return outExpr
 
 -- | TASO's split0 operator
 split0 ::

@@ -7,7 +7,6 @@ import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, matmul3D, relu, smul
 import Prelude hiding (concat)
 
 -- | Rule 1: Matrix multiplication associativity (batched)
--- ∀x, y, z. matmul3D(x, matmul3D(y, z)) = matmul3D(matmul3D(x, y), z)
 matmulAssociativity :: forall a. NumRule a
 matmulAssociativity _ = do
   [rclassB, rclassM, rclassK, rclassN, rclassP] <- newSingletonRClasses ["rclassB", "rclassM", "rclassK", "rclassN", "rclassP"]
@@ -40,10 +39,9 @@ matmulAssociativity _ = do
   xy <- matmul3D x y [rclassK --> kR] [ByRClass rclassB]
   rhs <- matmul3D xy z [rclassN --> nR] [ByRClass rclassB]
 
-  rewrite "matmul3D associativity" lhs rhs
+  rewrite "∀x, y, z. matmul3D(x, matmul3D(y, z)) = matmul3D(matmul3D(x, y), z)" lhs rhs
 
 -- | Rule 2: Scalar linearity (batched)
--- ∀x, y, w. smul(matmul3D(x, y), w) = matmul3D(x, smul(y, w))
 matmulScalarLinear :: forall a. NumRule a
 matmulScalarLinear _ = do
   let w = ("w" :: a)
@@ -67,7 +65,7 @@ matmulScalarLinear _ = do
   siRelation [kL, kR] $ \[l, r] -> l .== r
   checkSIMap [kL] [kR]
 
-  rewrite "smul distributes over matmul3D (right)" lhs rhs
+  rewrite "∀x, y, w. smul(matmul3D(x, y), w) = matmul3D(x, smul(y, w))" lhs rhs
 
 -- | Rule 3: Distributivity over addition (batched)
 matmulDistributive :: forall a. NumRule a
@@ -96,9 +94,9 @@ matmulDistributive _ = do
   siRelation [kL, kR2] $ \[l, r] -> l .== r
   checkSIMap [kL] [kR1, kR2]
 
-  rewrite "matmul3D distributes over ewadd" lhs rhs
+  rewrite "∀x, y, z. matmul(x, ewadd(y, z)) = ewadd(matmul(x, y), matmul(x, z))" lhs rhs
 
--- | Rule 6: Right concatenation (batched)
+-- | Rule 4: Right concatenation (batched)
 matmulConcatRight :: forall a. NumRule a
 matmulConcatRight _ = do
   [rclassB, rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassB", "rclassM", "rclassK", "rclassN"]
@@ -127,46 +125,49 @@ matmulConcatRight _ = do
 
   rewrite "concat along N moves through matmul3D(x, ·)" lhs rhs
 
--- -- | Rule 7: Concatenation and matrix multiplication (mixed)
--- -- ∀x, y, z, w. matmul(concat(1, x, z), concat(0, y, w)) = ewadd(matmul(x, y), matmul(z, w))
+-- | Rule 5: Concatenation and matrix multiplication (mixed)
+-- ∀x, y, z, w. matmul(concat(1, x, z), concat(0, y, w)) = ewadd(matmul(x, y), matmul(z, w))
 
--- -- | Rule 7: Mixed concatenation (batched)
--- matmulConcatMixed :: forall a. NumRule a
--- matmulConcatMixed _ = do
---   [rclassB, rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassB", "rclassM", "rclassK", "rclassN"]
---   sizeM <- newMap "sizeM" rclassM
---   [sizeK1, sizeK2] <- newMaps ["sizeK1", "sizeK2"] rclassK
---   sizeN <- newMap "sizeN" rclassN
---   [sizeB1, sizeB2, sizeB3, sizeB4] <- newMaps ["sizeB1", "sizeB2", "sizeB3", "sizeB4"] rclassB
+-- | Rule 5: Mixed concatenation (batched)
+matmulConcatMixed :: forall a. NumRule a
+matmulConcatMixed _ = do
+  [rclassB, rclassM, rclassK, rclassN] <- newSingletonRClasses ["rclassB", "rclassM", "rclassK", "rclassN"]
+  [sizeM1, sizeM2] <- newMaps ["sizeM1", "sizeM2"] rclassM
+  [sizeK1, sizeK2] <- newMaps ["sizeK1", "sizeK2"] rclassK
+  sizeN <- newMap "sizeN" rclassN
+  [sizeB1, sizeB2, sizeB3, sizeB4] <- newMaps ["sizeB1", "sizeB2", "sizeB3", "sizeB4"] rclassB
 
---   x <- newTensor @a "x" [rclassB --> sizeB1, rclassM --> sizeM, rclassK --> sizeK1]
---   y <- newTensor @a "y" [rclassB --> sizeB2, rclassK --> sizeK1, rclassN --> sizeN]
---   z <- newTensor @a "z" [rclassB --> sizeB3, rclassM --> sizeM, rclassK --> sizeK2]
---   w <- newTensor @a "w" [rclassB --> sizeB4, rclassK --> sizeK2, rclassN --> sizeN]
+  x <- newTensor @a "x" [rclassB --> sizeB1, rclassM --> sizeM1, rclassK --> sizeK1]
+  y <- newTensor @a "y" [rclassB --> sizeB2, rclassK --> sizeK1, rclassN --> sizeN]
+  z <- newTensor @a "z" [rclassB --> sizeB3, rclassM --> sizeM2, rclassK --> sizeK2]
+  w <- newTensor @a "w" [rclassB --> sizeB4, rclassK --> sizeK2, rclassN --> sizeN]
 
---   -- M and N must match across pairs; K is split into K1 and K2 (no equality needed)
---   siRelation [sizeM] $ \[_] -> true
---   siRelation [sizeN] $ \[_] -> true
---   -- All batch sizes must match so that B is a proper batch axis
---   precondition [sizeB1, sizeB2] $ \[b1, b2] -> b1 .== b2
---   precondition [sizeB1, sizeB3] $ \[b1, b3] -> b1 .== b3
---   precondition [sizeB1, sizeB4] $ \[b1, b4] -> b1 .== b4
+  -- All batch sizes must match so that B is a proper batch axis
+  precondition [sizeB1, sizeB2] $ \[b1, b2] -> b1 .== b2
+  precondition [sizeB1, sizeB3] $ \[b1, b3] -> b1 .== b3
+  precondition [sizeB1, sizeB4] $ \[b1, b4] -> b1 .== b4
+  -- Mixed: equal splits on M and K so SI equality is valid on both branches
+  precondition [sizeM1, sizeM2] $ \[m1, m2] -> m1 .== m2
+  precondition [sizeK1, sizeK2] $ \[k1, k2] -> k1 .== k2
 
---   xk <- concat (ByRClass rclassK) x z
---   yk <- concat (ByRClass rclassK) y w
+  xm <- concat (ByRClass rclassM) x z
+  yk <- concat (ByRClass rclassK) y w
 
---   kL <- newMap "kL" rclassK
---   lhs <- matmul3D xk yk [rclassK --> kL] [ByRClass rclassB]
---   -- Use the SAME SI map on RHS terms so each RHS SI has a corresponding LHS SI
---   xy <- matmul3D x y [rclassK --> kL] [ByRClass rclassB]
---   zw <- matmul3D z w [rclassK --> kL] [ByRClass rclassB]
+  -- Contract along K with equal SI maps across sides
+  kL <- newMap "kL" rclassK
+  kR1 <- newMap "kR1" rclassK
+  kR2 <- newMap "kR2" rclassK
 
---   rhs <- ewadd xy zw
+  lhs <- matmul3D xm yk [rclassK --> kL] [ByRClass rclassB]
+  xy <- matmul3D x y [rclassK --> kR1] [ByRClass rclassB]
+  zw <- matmul3D z w [rclassK --> kR2] [ByRClass rclassB]
+  rhs <- ewadd xy zw
 
---   -- Register only LHS SI map to satisfy verifier subset condition
---   checkSIMap [kL] []
+  siRelation [kL, kR1] $ \[l, r] -> l .== r
+  siRelation [kL, kR2] $ \[l, r] -> l .== r
+  checkSIMap [kL] [kR1, kR2]
 
---   rewrite "matmul3D(concat_K x z, concat_K y w) ⇒ matmul3D(x,y) + matmul3D(z,w)" lhs rhs
+  rewrite "matmul3D(concat_M x z, concat_K y w) ⇒ ewadd(matmul3D(x,y), matmul3D(z,w))" lhs rhs
 
 main :: IO ()
 main = do

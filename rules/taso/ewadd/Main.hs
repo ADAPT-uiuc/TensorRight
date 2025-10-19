@@ -4,8 +4,8 @@ import Grisette hiding ((-->))
 import TensorRight
 import TensorRight.Internal.DSL.TASO (ewadd)
 
-rule01 :: forall a. NumRule a -- Verify desugaring
-rule01 _ = do
+desugar :: forall a. NumRule a -- Verify desugaring
+desugar _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   tA <- newTensor @a "A" [rclass --> map]
@@ -14,19 +14,19 @@ rule01 _ = do
   rhs <- numBinOp Add tA tB
   rewrite "ewadd(A, B) ⇒ Add(A, B)" lhs rhs
 
-rule02 :: forall a. NumRule a -- Associativity
-rule02 _ = do
+associativity :: forall a. NumRule a -- Associativity
+associativity _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   x <- newTensor @a "x" [rclass --> map]
-  y <- newTensor @a "t" [rclass --> map]
+  y <- newTensor @a "y" [rclass --> map]
   z <- newTensor @a "z" [rclass --> map]
   lhs <- ewadd x $ ewadd y z
   rhs <- ewadd (ewadd x y) z
   rewrite "ewadd(x, ewadd(y, z)) ⇒ Add(ewadd(x, y), z)" lhs rhs
 
-rule03 :: forall a. NumRule a -- Verify commutative
-rule03 _ = do
+commutativity :: forall a. NumRule a -- Verify commutative
+commutativity _ = do
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
   x <- newTensor @a "x" [rclass --> map]
@@ -37,9 +37,9 @@ rule03 _ = do
 
 main :: IO ()
 main = do
-  printTitle "############################## rule01 ##############################"
-  verifyNumDSL rule01
-  printTitle "############################## rule02 ##############################"
-  verifyNumDSL rule02
-  printTitle "############################## rule03 ##############################"
-  verifyNumDSL rule03
+  printTitle "############################## desugar ##############################"
+  verifyNumDSL desugar
+  printTitle "############################## associativity ##############################"
+  verifyNumDSL associativity
+  printTitle "############################## commutativity ##############################"
+  verifyNumDSL commutativity

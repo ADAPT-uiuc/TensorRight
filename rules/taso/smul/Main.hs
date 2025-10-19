@@ -4,8 +4,8 @@ import Grisette hiding ((-->))
 import TensorRight
 import TensorRight.Internal.DSL.TASO (ewadd, ewmul, smul)
 
-rule01 :: forall a. NumRule a -- Verify desugaring
-rule01 _ = do
+desugar :: forall a. NumRule a -- Verify desugaring
+desugar _ = do
   let s = ("s" :: a)
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
@@ -14,8 +14,8 @@ rule01 _ = do
   rhs <- numBinScalarOp Mul tA s
   rewrite "smul(A, s) ⇒ Mul(A, s)" lhs rhs
 
-rule02 :: forall a. NumRule a -- Verify associativity
-rule02 _ = do
+associativity :: forall a. NumRule a -- Verify associativity
+associativity _ = do
   let w = ("w" :: a)
   let y = ("y" :: a)
   rclass <- newRClass "rclass"
@@ -25,8 +25,8 @@ rule02 _ = do
   rhs <- smul x (y * w) -- Multiply the scalars first since smul (y, w) doesn't make sense
   rewrite "smul(smul(x, y), w) ⇒ smul(x, smul(y, w))" lhs rhs
 
-rule03 :: forall a. NumRule a -- Distributivity
-rule03 _ = do
+distributivity :: forall a. NumRule a -- Distributivity
+distributivity _ = do
   let w = ("w" :: a)
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
@@ -36,8 +36,8 @@ rule03 _ = do
   rhs <- ewadd (smul x w) (smul y w)
   rewrite "smul(ewadd(x, y), w) ⇒ ewadd(smul(x, w), smul(y, w))" lhs rhs
 
-rule04 :: forall a. NumRule a -- Operator commutativity
-rule04 _ = do
+commutativity :: forall a. NumRule a -- Operator commutativity
+commutativity _ = do
   let w = ("w" :: a)
   rclass <- newRClass "rclass"
   map <- newMap "map" rclass
@@ -49,11 +49,11 @@ rule04 _ = do
 
 main :: IO ()
 main = do
-  printTitle "############################## rule01 ##############################"
-  verifyNumDSL rule01
-  printTitle "############################## rule02 ##############################"
-  verifyNumDSL rule02
-  printTitle "############################## rule03 ##############################"
-  verifyNumDSL rule03
-  printTitle "############################## rule04 ##############################"
-  verifyNumDSL rule04
+  printTitle "############################## desugar ##############################"
+  verifyNumDSL desugar
+  printTitle "############################## associativity ##############################"
+  verifyNumDSL associativity
+  printTitle "############################## distributivity ##############################"
+  verifyNumDSL distributivity
+  printTitle "############################## commutativity ##############################"
+  verifyNumDSL commutativity

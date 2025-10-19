@@ -250,6 +250,12 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  rules-taso-conv:
+    source-dirs: rules/taso/conv
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
   # Other Executables
   rules-debug:
     source-dirs: rules/debug
