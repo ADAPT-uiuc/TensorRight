@@ -1,217 +1,217 @@
 cradle:
-  cabal:
-    - path: "src"
-      component: "lib:tensor-right"
+  stack:
+    - path: "./src"
+      component: "tensor-right:lib"
 
-    - path: "rules/debug/Main.hs"
+    - path: "./rules/debug/Main.hs"
       component: "tensor-right:exe:rules-debug"
 
-    - path: "rules/debug/Paths_tensor_right.hs"
+    - path: "./rules/debug/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-debug"
 
-    - path: "rules/taso/concat/Main.hs"
+    - path: "./rules/taso/concat/Main.hs"
       component: "tensor-right:exe:rules-taso-concat"
 
-    - path: "rules/taso/concat/Paths_tensor_right.hs"
+    - path: "./rules/taso/concat/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-concat"
 
-    - path: "rules/taso/conv/Main.hs"
+    - path: "./rules/taso/conv/Main.hs"
       component: "tensor-right:exe:rules-taso-conv"
 
-    - path: "rules/taso/conv/Paths_tensor_right.hs"
+    - path: "./rules/taso/conv/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-conv"
 
-    - path: "rules/taso/enlarge/Main.hs"
+    - path: "./rules/taso/enlarge/Main.hs"
       component: "tensor-right:exe:rules-taso-enlarge"
 
-    - path: "rules/taso/enlarge/Paths_tensor_right.hs"
+    - path: "./rules/taso/enlarge/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-enlarge"
 
-    - path: "rules/taso/ewadd/Main.hs"
+    - path: "./rules/taso/ewadd/Main.hs"
       component: "tensor-right:exe:rules-taso-ewadd"
 
-    - path: "rules/taso/ewadd/Paths_tensor_right.hs"
+    - path: "./rules/taso/ewadd/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-ewadd"
 
-    - path: "rules/taso/ewmul/Main.hs"
+    - path: "./rules/taso/ewmul/Main.hs"
       component: "tensor-right:exe:rules-taso-ewmul"
 
-    - path: "rules/taso/ewmul/Paths_tensor_right.hs"
+    - path: "./rules/taso/ewmul/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-ewmul"
 
-    - path: "rules/taso/matmul2D/Main.hs"
+    - path: "./rules/taso/matmul2D/Main.hs"
       component: "tensor-right:exe:rules-taso-matmul2D"
 
-    - path: "rules/taso/matmul2D/Paths_tensor_right.hs"
+    - path: "./rules/taso/matmul2D/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-matmul2D"
 
-    - path: "rules/taso/matmul3D/Main.hs"
+    - path: "./rules/taso/matmul3D/Main.hs"
       component: "tensor-right:exe:rules-taso-matmul3D"
 
-    - path: "rules/taso/matmul3D/Paths_tensor_right.hs"
+    - path: "./rules/taso/matmul3D/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-matmul3D"
 
-    - path: "rules/taso/relu/Main.hs"
+    - path: "./rules/taso/relu/Main.hs"
       component: "tensor-right:exe:rules-taso-relu"
 
-    - path: "rules/taso/relu/Paths_tensor_right.hs"
+    - path: "./rules/taso/relu/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-relu"
 
-    - path: "rules/taso/smul/Main.hs"
+    - path: "./rules/taso/smul/Main.hs"
       component: "tensor-right:exe:rules-taso-smul"
 
-    - path: "rules/taso/smul/Paths_tensor_right.hs"
+    - path: "./rules/taso/smul/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-smul"
 
-    - path: "rules/taso/split/Main.hs"
+    - path: "./rules/taso/split/Main.hs"
       component: "tensor-right:exe:rules-taso-split"
 
-    - path: "rules/taso/split/Paths_tensor_right.hs"
+    - path: "./rules/taso/split/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-split"
 
-    - path: "rules/taso/transpose/Main.hs"
+    - path: "./rules/taso/transpose/Main.hs"
       component: "tensor-right:exe:rules-taso-transpose"
 
-    - path: "rules/taso/transpose/Paths_tensor_right.hs"
+    - path: "./rules/taso/transpose/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-transpose"
 
-    - path: "rules/xla/add/Main.hs"
+    - path: "./rules/xla/add/Main.hs"
       component: "tensor-right:exe:rules-xla-add"
 
-    - path: "rules/xla/add/Paths_tensor_right.hs"
+    - path: "./rules/xla/add/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-add"
 
-    - path: "rules/xla/broadcast/Main.hs"
+    - path: "./rules/xla/broadcast/Main.hs"
       component: "tensor-right:exe:rules-xla-broadcast"
 
-    - path: "rules/xla/broadcast/Paths_tensor_right.hs"
+    - path: "./rules/xla/broadcast/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-broadcast"
 
-    - path: "rules/xla/clamp/Main.hs"
+    - path: "./rules/xla/clamp/Main.hs"
       component: "tensor-right:exe:rules-xla-clamp"
 
-    - path: "rules/xla/clamp/Paths_tensor_right.hs"
+    - path: "./rules/xla/clamp/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-clamp"
 
-    - path: "rules/xla/compare/Main.hs"
+    - path: "./rules/xla/compare/Main.hs"
       component: "tensor-right:exe:rules-xla-compare"
 
-    - path: "rules/xla/compare/Paths_tensor_right.hs"
+    - path: "./rules/xla/compare/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-compare"
 
-    - path: "rules/xla/concat/Main.hs"
+    - path: "./rules/xla/concat/Main.hs"
       component: "tensor-right:exe:rules-xla-concat"
 
-    - path: "rules/xla/concat/Paths_tensor_right.hs"
+    - path: "./rules/xla/concat/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-concat"
 
-    - path: "rules/xla/conv/Main.hs"
+    - path: "./rules/xla/conv/Main.hs"
       component: "tensor-right:exe:rules-xla-conv"
 
-    - path: "rules/xla/conv/Paths_tensor_right.hs"
+    - path: "./rules/xla/conv/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-conv"
 
-    - path: "rules/xla/divmod/Main.hs"
+    - path: "./rules/xla/divmod/Main.hs"
       component: "tensor-right:exe:rules-xla-divmod"
 
-    - path: "rules/xla/divmod/Paths_tensor_right.hs"
+    - path: "./rules/xla/divmod/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-divmod"
 
-    - path: "rules/xla/dot/Main.hs"
+    - path: "./rules/xla/dot/Main.hs"
       component: "tensor-right:exe:rules-xla-dot"
 
-    - path: "rules/xla/dot/Paths_tensor_right.hs"
+    - path: "./rules/xla/dot/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-dot"
 
-    - path: "rules/xla/dyslice/Main.hs"
+    - path: "./rules/xla/dyslice/Main.hs"
       component: "tensor-right:exe:rules-xla-dyslice"
 
-    - path: "rules/xla/dyslice/Paths_tensor_right.hs"
+    - path: "./rules/xla/dyslice/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-dyslice"
 
-    - path: "rules/xla/dyupslice/Main.hs"
+    - path: "./rules/xla/dyupslice/Main.hs"
       component: "tensor-right:exe:rules-xla-dyupslice"
 
-    - path: "rules/xla/dyupslice/Paths_tensor_right.hs"
+    - path: "./rules/xla/dyupslice/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-dyupslice"
 
-    - path: "rules/xla/generalize/Main.hs"
+    - path: "./rules/xla/generalize/Main.hs"
       component: "tensor-right:exe:rules-xla-generalize"
 
-    - path: "rules/xla/generalize/Paths_tensor_right.hs"
+    - path: "./rules/xla/generalize/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-generalize"
 
-    - path: "rules/xla/iota/Main.hs"
+    - path: "./rules/xla/iota/Main.hs"
       component: "tensor-right:exe:rules-xla-iota"
 
-    - path: "rules/xla/iota/Paths_tensor_right.hs"
+    - path: "./rules/xla/iota/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-iota"
 
-    - path: "rules/xla/logical/Main.hs"
+    - path: "./rules/xla/logical/Main.hs"
       component: "tensor-right:exe:rules-xla-logical"
 
-    - path: "rules/xla/logical/Paths_tensor_right.hs"
+    - path: "./rules/xla/logical/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-logical"
 
-    - path: "rules/xla/max/Main.hs"
+    - path: "./rules/xla/max/Main.hs"
       component: "tensor-right:exe:rules-xla-max"
 
-    - path: "rules/xla/max/Paths_tensor_right.hs"
+    - path: "./rules/xla/max/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-max"
 
-    - path: "rules/xla/mul/Main.hs"
+    - path: "./rules/xla/mul/Main.hs"
       component: "tensor-right:exe:rules-xla-mul"
 
-    - path: "rules/xla/mul/Paths_tensor_right.hs"
+    - path: "./rules/xla/mul/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-mul"
 
-    - path: "rules/xla/not/Main.hs"
+    - path: "./rules/xla/not/Main.hs"
       component: "tensor-right:exe:rules-xla-not"
 
-    - path: "rules/xla/not/Paths_tensor_right.hs"
+    - path: "./rules/xla/not/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-not"
 
-    - path: "rules/xla/pad/Main.hs"
+    - path: "./rules/xla/pad/Main.hs"
       component: "tensor-right:exe:rules-xla-pad"
 
-    - path: "rules/xla/pad/Paths_tensor_right.hs"
+    - path: "./rules/xla/pad/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-pad"
 
-    - path: "rules/xla/reduce/Main.hs"
+    - path: "./rules/xla/reduce/Main.hs"
       component: "tensor-right:exe:rules-xla-reduce"
 
-    - path: "rules/xla/reduce/Paths_tensor_right.hs"
+    - path: "./rules/xla/reduce/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-reduce"
 
-    - path: "rules/xla/relabel/Main.hs"
+    - path: "./rules/xla/relabel/Main.hs"
       component: "tensor-right:exe:rules-xla-relabel"
 
-    - path: "rules/xla/relabel/Paths_tensor_right.hs"
+    - path: "./rules/xla/relabel/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-relabel"
 
-    - path: "rules/xla/reverse/Main.hs"
+    - path: "./rules/xla/reverse/Main.hs"
       component: "tensor-right:exe:rules-xla-reverse"
 
-    - path: "rules/xla/reverse/Paths_tensor_right.hs"
+    - path: "./rules/xla/reverse/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-reverse"
 
-    - path: "rules/xla/select/Main.hs"
+    - path: "./rules/xla/select/Main.hs"
       component: "tensor-right:exe:rules-xla-select"
 
-    - path: "rules/xla/select/Paths_tensor_right.hs"
+    - path: "./rules/xla/select/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-select"
 
-    - path: "rules/xla/slice/Main.hs"
+    - path: "./rules/xla/slice/Main.hs"
       component: "tensor-right:exe:rules-xla-slice"
 
-    - path: "rules/xla/slice/Paths_tensor_right.hs"
+    - path: "./rules/xla/slice/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-slice"
 
-    - path: "rules/xla/sub/Main.hs"
+    - path: "./rules/xla/sub/Main.hs"
       component: "tensor-right:exe:rules-xla-sub"
 
-    - path: "rules/xla/sub/Paths_tensor_right.hs"
+    - path: "./rules/xla/sub/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-xla-sub"
 
-    - path: "test"
+    - path: "./test"
       component: "tensor-right:test:spec"
