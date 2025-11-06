@@ -1132,9 +1132,6 @@ clamp mino to maxo = do
           case (minElem, tElem, maxElem) of
             (TensorElemVal minSym, TensorElemVal tSym, TensorElemVal maxSym) ->
               mrgReturn $ TensorElemVal $ tensorValSymMin maxSym $ tensorValSymMax tSym minSym
-            (TensorElemVal minSym, TensorElemSum tSym, TensorElemVal maxSym) ->
-              -- Special case with contraction
-              mrgReturn $ TensorElemSum $ tensorValSymMin maxSym $ tensorValSymMax tSym minSym
             _ -> error "Not implemented"
       )
       (tensorShape t)
