@@ -189,6 +189,73 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  # TASO Executables
+  rules-taso-ewadd:
+    source-dirs: rules/taso/ewadd
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-ewmul:
+    source-dirs: rules/taso/ewmul
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-smul:
+    source-dirs: rules/taso/smul
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-relu:
+    source-dirs: rules/taso/relu
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-concat:
+    source-dirs: rules/taso/concat
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-transpose:
+    source-dirs: rules/taso/transpose
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-enlarge:
+    source-dirs: rules/taso/enlarge
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-matmul2D:
+    source-dirs: rules/taso/matmul2D
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-matmul3D:
+    source-dirs: rules/taso/matmul3D
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-split:
+    source-dirs: rules/taso/split
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-conv:
+    source-dirs: rules/taso/conv
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
   # Other Executables
   rules-debug:
     source-dirs: rules/debug

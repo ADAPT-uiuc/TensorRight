@@ -66,6 +66,7 @@ import TensorRight.Internal.Core.Tensor
   )
 import qualified TensorRight.Internal.Core.Tensor.Typed as Typed
 import TensorRight.Internal.Util.Error (Error, ErrorEnv, splitWithError)
+import TensorRight.Internal.Util.Pretty (printWarning)
 
 getTensorWithValidityCondition ::
   forall a.
@@ -304,11 +305,11 @@ verifyRule
       bil2r <- case soll2r of
         Left Unsat -> return True
         Left err -> do
-          putStrLn $ "[WARNING]: Verification for forall right si there do not exist multiple left si fails due to unexpected solver failure" <> show err
+          printWarning $ "Verification for forall right si there do not exist multiple left si fails due to unexpected solver failure" <> show err
           return False
         Right m -> do
           pprint m
-          putStrLn "[WARNING]: SI-relation is not bijective. (There exist multiple left SI for a right SI.)"
+          printWarning "SI-relation is not bijective. (There exist multiple left SI for a right SI.)"
           return False
 
       condr2l <-
@@ -326,11 +327,11 @@ verifyRule
       bir2l <- case solr2l of
         Left Unsat -> return True
         Left err -> do
-          putStrLn $ "[WARNING]: Verification for forall left si there do not exist multiple right si fails due to unexpected solver failure" <> show err
+          printWarning $ "Verification for forall left si there do not exist multiple right si fails due to unexpected solver failure" <> show err
           return False
         Right m -> do
           pprint m
-          putStrLn "[WARNING]: SI-relation is not bijective. (There exist multiple right SI for a left SI.)"
+          printWarning "SI-relation is not bijective. (There exist multiple right SI for a left SI.)"
           return False
 
       if bil2r && bir2l
@@ -351,13 +352,11 @@ verifyRule
           allokl <- case r of
             Left Unsat -> return True
             Left err -> do
-              putStrLn $
-                "[WARNING]: Verification that all left si can be accessed fails due to unexpected solver failure"
-                  <> show err
+              printWarning $ "Verification that all left si can be accessed fails due to unexpected solver failure" <> show err
               return False
             Right m -> do
               pprint m
-              putStrLn "[WARNING]: Some left si cannot be accessed."
+              printWarning "Some left si cannot be accessed."
               return False
           condr <-
             evaluate $
@@ -375,17 +374,16 @@ verifyRule
           allokr <- case r of
             Left Unsat -> return True
             Left err -> do
-              putStrLn $
-                "[WARNING]: Verification that all right si can be accessed fails due to unexpected solver failure"
-                  <> show err
+              printWarning $ "Verification that all right si can be accessed fails due to unexpected solver failure" <> show err
               return False
             Right m -> do
               pprint m
-              putStrLn "[WARNING]: Some right si cannot be accessed."
+              printWarning "Some right si cannot be accessed."
               return False
           unless (allokl && allokr) $
-            putStrLn "[WARNING]: Some SI cannot be accessed."
-        else putStrLn "[WARNING]: SI-relation is not bijective."
+            printWarning
+              "Some SI cannot be accessed."
+        else printWarning "SI-relation is not bijective."
 
     cond1 <-
       evaluate $

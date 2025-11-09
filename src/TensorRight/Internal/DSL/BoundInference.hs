@@ -230,14 +230,14 @@ inferBound ::
   GrisetteSMTConfig ->
   VerifyTask ->
   HS.HashSet RClassIdentifier ->
-  HS.HashSet RClassIdentifier ->
+  HM.HashMap RClassIdentifier Int ->
   AbstractShape ->
-  IO (HM.HashMap RClassIdentifier Int)
+  IO (HM.HashMap RClassIdentifier (Int, Int))
 inferBound
   solverConfig
   (VerifyTask _ lhs rhs pre siRelation _ _ _ _ _ _ _ _ _)
-  nonSingletonRClasses
-  singletonRClasses
+  nonFixedRClasses
+  rankConditions
   sp = do
     let preCond = pre
     when (preCond == con False) $
@@ -291,12 +291,13 @@ inferBound
           max 1 $
             kFromAllAccesses rclass
               + numHasRClassInGroup rclass (HS.toList filteredConditions)
-    return $
-      HM.fromList $
-        ( (\rclass -> (rclass, kForRClass rclass))
-            <$> HS.toList (nonSingletonRClasses `HS.difference` singletonRClasses)
-        )
-          <> ((,1) <$> HS.toList singletonRClasses)
+
+    let fixedRClasses = HM.keysSet rankConditions
+    let inferredBounds =
+          HM.fromList $
+            (\rclass -> (rclass, (1, kForRClass rclass)))
+              <$> HS.toList (nonFixedRClasses `HS.difference` fixedRClasses)
+    return $ HM.union inferredBounds (HM.map (\k -> (k, k)) rankConditions)
 
 abstractShapeAccess :: AbstractShape -> Indices
 abstractShapeAccess AbstractShape {..} = do

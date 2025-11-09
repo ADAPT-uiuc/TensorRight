@@ -631,9 +631,9 @@ sliceStartEndStrides to SliceArgs {..} = do
               restrictAxes diffDims (fromHashMap valMap)
         return $ unionAxisMap indices emptyIndices
   let defaultMap val = HM.fromList . map (,val) . HS.toList
-  filledStart <- checkAndFillInAxes "start" start $ (defaultMap 0 axes)
+  filledStart <- checkAndFillInAxes "start" start $ defaultMap 0 axes
   filledEnd <- checkAndFillInAxes "end" end $ asHashMap (tensorShape t)
-  filledStrides <- checkAndFillInAxes "strides" strides $ (defaultMap 1 axes)
+  filledStrides <- checkAndFillInAxes "strides" strides $ defaultMap 1 axes
 
   assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap filledStart
   -- The original Rosette implementation may be buggy here.

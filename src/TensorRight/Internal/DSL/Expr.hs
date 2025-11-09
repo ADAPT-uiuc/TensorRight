@@ -617,10 +617,10 @@ data Env = Env
     exprAbstractShapes :: HM.HashMap Int AbstractShape,
     exprDTypes :: HM.HashMap Int DType,
     preConditions :: [Condition],
+    rankConditions :: HM.HashMap RClassIdentifier Int,
     numTensorAssumptions :: [NumTensorAssumption],
     siMaps :: HS.HashSet MapIdentifier,
     siRelations :: [Condition],
-    singletonRClasses :: HS.HashSet RClassIdentifier,
     monitoringExprs :: [(T.Text, Expr)],
     monitoringMaps :: [(T.Text, RClassRef, MapIdentifier)],
     lhsSIMaps :: HS.HashSet MapIdentifier,
@@ -643,10 +643,10 @@ emptyEnv =
     HM.empty
     HM.empty
     []
+    HM.empty
     []
     HS.empty
     []
-    HS.empty
     []
     []
     HS.empty

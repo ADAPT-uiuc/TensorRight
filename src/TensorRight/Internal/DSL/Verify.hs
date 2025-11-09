@@ -57,8 +57,8 @@ import TensorRight.Internal.DSL.DSL
         lhsSIMaps,
         numTensorAssumptions,
         preConditions,
+        rankConditions,
         rhsSIMaps,
-        singletonRClasses,
         tensorShapes
       ),
     ValidElem,
@@ -97,6 +97,7 @@ import TensorRight.Internal.DSL.Identifier (RClassIdentifier)
 import TensorRight.Internal.DSL.Shape
   ( AbstractShape,
   )
+import TensorRight.Internal.Util.Pretty (printFailure, printSuccess, printTitle)
 
 verifyDSLWithNDim ::
   GrisetteSMTConfig ->
@@ -210,6 +211,9 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
                 else mempty
           )
           maps
+
+  let fixedRClasses = HM.keysSet rankConditions
+  let nonFixedRClasses = declaredRClasses `HS.difference` fixedRClasses
   return
     ( VerifyTask
         solverConfig
@@ -226,8 +230,8 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
         otherSISymbols
         monitoringTensors
         monitoringSizes,
-      declaredRClasses `HS.difference` singletonRClasses,
-      singletonRClasses,
+      nonFixedRClasses,
+      fixedRClasses,
       exprAbstractShapes HM.! exprId (lhs rewrite)
     )
 
@@ -244,7 +248,7 @@ printRewriteNameLine :: DSLContext Rewrite -> IO ()
 printRewriteNameLine rewrite = do
   case getRewriteName rewrite of
     Left err -> fail $ T.unpack err
-    Right name -> putStrLn $ "====> " <> T.unpack name
+    Right name -> printTitle $ "====> " <> T.unpack name
 
 data Result = Result
   { elapsedTime :: Double,
@@ -257,21 +261,14 @@ instance Semigroup Result where
 
 printResult :: Maybe String -> Result -> IO ()
 printResult subTheory Result {..} =
-  putStrLn $
-    "["
-      <> ( if isRight result
-             then "SUCCESS"
-             else "FAIL"
-         )
-      <> maybe "" ("-" <>) subTheory
-      <> "]: ["
-      <> show elapsedTime
-      <> "s] Verification "
-      <> (if isRight result then "succeeded" else "failed")
-      <> ( case result of
-             Right () -> "."
-             Left e -> " with error: " <> show e
-         )
+  if isRight result
+    then printSuccess theory $ time <> " Verification succeeded."
+    else printFailure theory $ time <> " Verification failed with error: " <> showError result
+  where
+    showError (Left e) = show e
+    showError (Right _) = ""
+    time = "[" <> show elapsedTime <> "s]"
+    theory = maybe "" ("-" <>) subTheory
 
 bracketFailure ::
   DSLContext Rewrite -> IO () -> IO Result
@@ -302,38 +299,33 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
     Right (rewrite, env) -> do
       putStrLn $ "Verifying rule " <> T.unpack (name rewrite)
       let bound0 = baseRClassBound0 rewrite env
-      (task, nonSingletonRClasses, singletonRClasses, shape) <-
+      (task, nonSingletonRClasses, _singletonRClasses, shape) <-
         verifyDSLWithNDim solverConfig rewrite env bound0
-      inferredBound <-
-        inferBound
-          solverConfig
-          task
-          nonSingletonRClasses
-          singletonRClasses
-          shape
-      putStrLn $ "Inferred bounds: " <> show inferredBound
+      inferredBounds <-
+        inferBound solverConfig task nonSingletonRClasses (rankConditions env) shape
+      putStrLn $ "Inferred bounds: " <> show inferredBounds
       putStrLn $
         "[INFO"
           <> maybe "" ("-" <>) theoryInfo
           <> "]: Inferred bounds: "
-          <> show inferredBound
+          <> show inferredBounds
       putStrLn $
         "[INFO"
           <> maybe "" ("-" <>) theoryInfo
           <> "]: Number of bounded verification tasks: "
-          <> show (product inferredBound)
-      let ndims = allNdims $ HM.toList inferredBound
+          <> show (product $ fmap (\(l, u) -> u - l + 1) inferredBounds)
+      let ndims = allNdims $ HM.toList inferredBounds
       let fst4 (a, _, _, _) = a
       traverse_
         (verifyDSLWithNDim solverConfig rewrite env >=> verifyRule . fst4)
         ndims
   where
-    allNdims :: [(RClassIdentifier, Int)] -> [HM.HashMap RClassIdentifier Int]
+    allNdims :: [(RClassIdentifier, (Int, Int))] -> [HM.HashMap RClassIdentifier Int]
     allNdims inferredBoundList =
       HM.fromList
         <$> traverse
-          ( \(rclassIdent, bound) ->
-              [(rclassIdent, i) | i <- [1 .. bound]]
+          ( \(rclassIdent, (lower, upper)) ->
+              [(rclassIdent, i) | i <- [lower .. upper]]
           )
           inferredBoundList
 

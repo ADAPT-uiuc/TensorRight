@@ -164,6 +164,9 @@ instance ToElem TensorReal where
 instance ToElem SymBool where
   toElem = BoolElem . Typed.TensorElemVal
 
+instance ToElem Elem where
+  toElem = id
+
 tensorAccess :: (TensorOperand t) => t -> Indices -> ErrorEnv Elem
 tensorAccess to i = do
   t <- tensor to

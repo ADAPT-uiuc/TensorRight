@@ -4,803 +4,1134 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           tensor-right
-version:        0.1.0.0
-synopsis:       Automated Verification of Tensor Graph Rewrites
-description:    TensorRight is an automatic tool that can be used to verify
-                Tensor Graph Rewrites.
-license:        Apache-2.0
-license-file:   LICENSE
-build-type:     Simple
+name: tensor-right
+version: 0.1.0.0
+synopsis: Automated Verification of Tensor Graph Rewrites
+description: TensorRight is an automatic tool that can be used to verify
+             Tensor Graph Rewrites.
+license: Apache-2.0
+license-file: LICENSE
+build-type: Simple
 
 library
   exposed-modules:
-      TensorRight
-      TensorRight.Internal.Core.Axis
-      TensorRight.Internal.Core.Linearization
-      TensorRight.Internal.Core.Tensor
-      TensorRight.Internal.Core.Tensor.TensorInt
-      TensorRight.Internal.Core.Tensor.Typed
-      TensorRight.Internal.Core.Verify
-      TensorRight.Internal.DSL.BoundInference
-      TensorRight.Internal.DSL.Condition
-      TensorRight.Internal.DSL.DSL
-      TensorRight.Internal.DSL.Eval
-      TensorRight.Internal.DSL.Expr
-      TensorRight.Internal.DSL.Identifier
-      TensorRight.Internal.DSL.Parameters
-      TensorRight.Internal.DSL.RelabelMap
-      TensorRight.Internal.DSL.Shape
-      TensorRight.Internal.DSL.Syntax
-      TensorRight.Internal.DSL.Verify
-      TensorRight.Internal.Util.Error
-      TensorRight.Internal.Util.Pretty
+    TensorRight
+    TensorRight.Internal.Core.Axis
+    TensorRight.Internal.Core.Linearization
+    TensorRight.Internal.Core.Tensor
+    TensorRight.Internal.Core.Tensor.TensorInt
+    TensorRight.Internal.Core.Tensor.Typed
+    TensorRight.Internal.Core.Verify
+    TensorRight.Internal.DSL.BoundInference
+    TensorRight.Internal.DSL.Condition
+    TensorRight.Internal.DSL.DSL
+    TensorRight.Internal.DSL.Eval
+    TensorRight.Internal.DSL.Expr
+    TensorRight.Internal.DSL.Identifier
+    TensorRight.Internal.DSL.Parameters
+    TensorRight.Internal.DSL.RelabelMap
+    TensorRight.Internal.DSL.Shape
+    TensorRight.Internal.DSL.Syntax
+    TensorRight.Internal.DSL.TASO
+    TensorRight.Internal.DSL.Verify
+    TensorRight.Internal.Util.Error
+    TensorRight.Internal.Util.Pretty
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      src
+    src
   ghc-options: -Wextra -Wcompat -Widentities -Wincomplete-record-updates -Wmissing-export-lists -Wmissing-home-modules -Wmissing-import-lists -Wpartial-fields -Wunused-type-patterns -Wno-x-partial -Wno-unrecognised-warning-flags
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-debug
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/debug
+    rules/debug
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-concat
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/concat
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-conv
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/conv
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-enlarge
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/enlarge
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-ewadd
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/ewadd
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-ewmul
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/ewmul
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-matmul2D
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/matmul2D
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-matmul3D
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/matmul3D
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-relu
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/relu
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-smul
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/smul
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-split
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/split
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-transpose
+  main-is: Main.hs
+  other-modules:
+    Paths_tensor_right
+  hs-source-dirs:
+    rules/taso/transpose
+  default-extensions:
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-add
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/add
+    rules/xla/add
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-broadcast
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/broadcast
+    rules/xla/broadcast
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-clamp
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/clamp
+    rules/xla/clamp
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-compare
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/compare
+    rules/xla/compare
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-concat
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/concat
+    rules/xla/concat
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-conv
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/conv
+    rules/xla/conv
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-divmod
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/divmod
+    rules/xla/divmod
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-dot
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/dot
+    rules/xla/dot
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-dyslice
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/dyslice
+    rules/xla/dyslice
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-dyupslice
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/dyupslice
+    rules/xla/dyupslice
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-generalize
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/generalize
+    rules/xla/generalize
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-iota
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/iota
+    rules/xla/iota
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-logical
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/logical
+    rules/xla/logical
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-max
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/max
+    rules/xla/max
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-mul
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/mul
+    rules/xla/mul
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-not
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/not
+    rules/xla/not
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-pad
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/pad
+    rules/xla/pad
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-reduce
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/reduce
+    rules/xla/reduce
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-relabel
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/relabel
+    rules/xla/relabel
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-reverse
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/reverse
+    rules/xla/reverse
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-select
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/select
+    rules/xla/select
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-slice
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/slice
+    rules/xla/slice
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 executable rules-xla-sub
   main-is: Main.hs
   other-modules:
-      Paths_tensor_right
+    Paths_tensor_right
   hs-source-dirs:
-      rules/xla/sub
+    rules/xla/sub
   default-extensions:
-      DuplicateRecordFields
-      OverloadedStrings
-      TypeApplications
-      AllowAmbiguousTypes
-      ScopedTypeVariables
-      FlexibleContexts
-      RankNTypes
+    DuplicateRecordFields
+    OverloadedStrings
+    TypeApplications
+    AllowAmbiguousTypes
+    ScopedTypeVariables
+    FlexibleContexts
+    RankNTypes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , text
-    , unordered-containers
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    text,
+    unordered-containers
   default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Core.LinearizationTest
-      Core.TensorTest
-      TestUtil
-      Paths_tensor_right
+    Core.LinearizationTest
+    Core.TensorTest
+    TestUtil
+    Paths_tensor_right
   hs-source-dirs:
-      test
+    test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      HUnit >=1.6
-    , QuickCheck
-    , base >=4.14 && <5
-    , deepseq
-    , grisette ==0.11.*
-    , hashable
-    , mtl
-    , ordered-containers
-    , prettyprinter
-    , sbv
-    , template-haskell
-    , tensor-right
-    , test-framework >=0.8.2 && <0.9
-    , test-framework-hunit >=0.3.0.2 && <0.4
-    , test-framework-quickcheck2 >=0.3.0.5 && <0.4
-    , text
-    , unordered-containers
+    HUnit >=1.6,
+    QuickCheck,
+    base >=4.14 && <5,
+    deepseq,
+    grisette ==0.11.*,
+    hashable,
+    mtl,
+    ordered-containers,
+    prettyprinter,
+    sbv,
+    template-haskell,
+    tensor-right,
+    test-framework >=0.8.2 && <0.9,
+    test-framework-hunit >=0.3.0.2 && <0.4,
+    test-framework-quickcheck2 >=0.3.0.5 && <0.4,
+    text,
+    unordered-containers
   default-language: Haskell2010

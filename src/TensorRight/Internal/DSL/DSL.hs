@@ -36,6 +36,7 @@ module TensorRight.Internal.DSL.DSL
     newTensor,
     numBinOp,
     boolBinOp,
+    rankPrecondition,
     reduce,
     siRelation,
     precondition,
@@ -60,6 +61,8 @@ module TensorRight.Internal.DSL.DSL
     boolUnaryOp,
     convBase,
     conv,
+    newSingletonRClass,
+    newSingletonRClasses,
     monitorExprOnFailure,
     monitorMapOnFailure,
     clamp,
@@ -70,6 +73,8 @@ module TensorRight.Internal.DSL.DSL
     newConstMap,
     newConstMaps,
     combineMap,
+    twoRefsOf,
+    threeRefsOf,
     Padding (..),
     ConvConfig (..),
     ConvPadding (..),
@@ -82,6 +87,8 @@ module TensorRight.Internal.DSL.DSL
     checkSIMap,
     reshapeDegenerate,
     numTensorAssumption,
+    ExprInContext,
+    liftInContext,
   )
 where
 
@@ -124,7 +131,7 @@ import TensorRight.Internal.DSL.Expr
     ConvPaddingArgsExpr (ConvPaddingArgsExpr, high, ldilation, low, rdilation),
     DSLContext,
     DySliceArgsExpr (DySliceArgsExpr, sizes, start),
-    Env (Env, lhsSIMaps, numTensorAssumptions),
+    Env (..),
     Expr,
     NumTensorAssumption (NumTensorAssumption),
     PaddingArgsExpr (PaddingArgsExpr, high, interior, low),
@@ -178,7 +185,6 @@ import TensorRight.Internal.DSL.Expr
     rhsSIMaps,
     runDSLContext,
     siRelations,
-    singletonRClasses,
     tensorDTypes,
     tensorShapes,
     validTensorShape,
@@ -204,7 +210,7 @@ import TensorRight.Internal.DSL.Shape
     restrictAbstractShape,
     toAbstractShape,
   )
-import TensorRight.Internal.Util.Error (assert)
+import TensorRight.Internal.Util.Error (assert, tshow)
 
 -- | Create an integer element from a tensor int.
 intElem :: TensorInt -> Elem
@@ -391,6 +397,34 @@ precondition ::
   DSLContext ()
 precondition maps = precondition' maps . zipCondition
 
+-- | Declare an exact rank for an RClass. Sets rankConditions[rclass] = k.
+rankPrecondition ::
+  RClassIdentifier ->
+  Int ->
+  DSLContext ()
+rankPrecondition rclass k = do
+  assert "rankPrecondition: k must be >= 1" (k >= 1)
+  env <- get
+  case HM.lookup rclass (rankConditions env) of
+    Just k' -> assert "Conflicting rankPrecondition for the same RClass" (k' == k)
+    Nothing -> return ()
+  put $ env {rankConditions = HM.insert rclass k (rankConditions env)}
+
+-- | Mark an existing RClass as singleton (exact rank 1).
+markSingleton :: RClassIdentifier -> DSLContext ()
+markSingleton r = rankPrecondition r 1
+
+-- | Create a new singleton RClass
+newSingletonRClass :: T.Text -> DSLContext RClassIdentifier
+newSingletonRClass label = do
+  rclass <- newRClass label
+  markSingleton rclass
+  return rclass
+
+-- | Create singleton RClasses
+newSingletonRClasses :: [T.Text] -> DSLContext [RClassIdentifier]
+newSingletonRClasses = traverse newSingletonRClass
+
 -- | Add an SI relation to rewriting rule.
 -- It is similar to 'precondition', but it is used to specify the SI relations.
 siRelation' ::
@@ -487,7 +521,7 @@ numBinScalarOp op lhs' rhs = do
     typeLhs <- typeOf lhs
     assert "lhs must be int or real" $ typeLhs `elem` [IntType, RealType]
     assert "lhs and rhs must have the same dtype" $ toDType rhs == typeLhs
-    return (shapeLhs, IntType)
+    return (shapeLhs, typeLhs)
 
 -- | Boolean binary operation. The lhs and rhs must have the same shape, and
 -- the dtype of lhs and rhs must be 'BoolType'.
@@ -672,8 +706,7 @@ iota shapeDesc d = do
     validTensorShape shape
     let abstractShape = toAbstractShape shape
     rclass <- getRClassByRClassRef abstractShape d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    markSingleton rclass
     return (abstractShape, IntType)
 
 -- | The named arguments to the 'slice' operation.
@@ -1096,8 +1129,7 @@ concatTensor lhs' rhs' d = do
     assert "lhs and rhs must have the same rclasses" $ shapeLhs == shapeRhs
     assert "lhs and rhs must have the same type" $ tyLhs == tyRhs
     rclass <- getRClassByRClassRef shapeLhs d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    markSingleton rclass
     return (shapeLhs, tyLhs)
 
 -- | Concatenate a list of tensors.
@@ -1117,8 +1149,7 @@ concatTensorList exprs' d = do
     assert "All tensors in concatList must have the same RClasses" $ all (== head shapes) shapes
     assert "All tensors in concatList must have the same type" $ all (== head tys) tys
     rclass <- getRClassByRClassRef (head shapes) d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    markSingleton rclass
     return (head shapes, head tys)
 
 -- | Relabel operation.
@@ -1127,7 +1158,7 @@ relabel ::
   -- | The tensor to relabel.
   e ->
   -- | The relabel map. Should be @[rclass --> 'ByLabel' label]@ or
-  -- @['ByLabel' label -> 'ByLabel' label, ...]@.
+  -- @['ByLabel' label --> 'ByLabel' label, ...]@.
   [RelabelMapDesc] ->
   DSLContext Expr
 relabel expr' relabelMapDescs = do
@@ -1187,8 +1218,9 @@ dot lhs rhs contractingSIMapsDesc batchRClasses = do
     let dotAllRefs = HM.keysSet contractingSIMaps <> HS.fromList batchRClasses
     let lhsAllRefs = abstractShapeAllRefs shapeLhs
     let rhsAllRefs = abstractShapeAllRefs shapeRhs
+
     assert
-      ( "Contracion + batch rclasses must be exactly the interaction of lhs and "
+      ( "Contraction + batch rclasses must be exactly the interaction of lhs and "
           <> "rhs rclasses"
       )
       $ dotAllRefs == HS.intersection lhsAllRefs rhsAllRefs
@@ -1483,3 +1515,22 @@ checkSIMap lhs rhs = do
       { lhsSIMaps = HS.union lhsSet $ lhsSIMaps env,
         rhsSIMaps = HS.union rhsSet $ rhsSIMaps env
       }
+
+-- | Gets the two aggregated axes from a 2D tensor. Useful for 2D Transpose
+twoRefsOf :: Expr -> DSLContext (RClassRef, RClassRef)
+twoRefsOf e = do
+  shape <- shapeOf e
+  let refs = HS.toList $ abstractShapeAllRefs shape
+  assert ("Expected exactly 2 refs, got " <> tshow (length refs)  <> ": " <> tshow refs) $
+    length refs == 2
+  let [a, b] = refs in return (a, b)
+
+-- | Helper function to get three aggregated axes from a 3D tensor.
+-- Useful for 3D batched matrix multiplication.
+threeRefsOf :: Expr -> DSLContext (RClassRef, RClassRef, RClassRef)
+threeRefsOf e = do
+  shape <- shapeOf e
+  let refs = HS.toList $ abstractShapeAllRefs shape
+  assert ("Expected exactly 3 refs, got " <> tshow (length refs)  <> ": " <> tshow refs) $
+    length refs == 3
+  let [a, b, c] = refs in return (a, b, c)

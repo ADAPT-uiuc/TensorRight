@@ -6,6 +6,10 @@ module TensorRight.Internal.Util.Pretty
     condEnclose,
     prettyWithConstructor,
     gprettyParen,
+    printTitle,
+    printSuccess,
+    printFailure,
+    printWarning,
   )
 where
 
@@ -33,3 +37,15 @@ gprettyParen b = condEnclose b "(" ")"
 prettyWithConstructor :: Int -> Doc ann -> [Doc ann] -> Doc ann
 prettyWithConstructor n c l =
   group $ condEnclose (n > 10) "(" ")" $ align $ nest 2 $ vsep (c : l)
+
+printTitle :: String -> IO ()
+printTitle s = putStrLn $ "\ESC[34m" <> s <> "\ESC[0m"
+
+printSuccess :: String -> String -> IO ()
+printSuccess theory s = putStrLn $ "\ESC[32m[SUCCESS" <> theory <> "]: " <> s <> "\ESC[0m"
+
+printFailure :: String -> String -> IO ()
+printFailure theory s = putStrLn $ "\ESC[31m[FAIL" <> theory <> "]: " <> s <> "\ESC[0m"
+
+printWarning :: String -> IO ()
+printWarning s = putStrLn $ "\ESC[33m[WARNING]: " <> s <> "\ESC[0m"
