@@ -210,7 +210,7 @@ import TensorRight.Internal.DSL.Shape
     restrictAbstractShape,
     toAbstractShape,
   )
-import TensorRight.Internal.Util.Error (assert)
+import TensorRight.Internal.Util.Error (assert, tshow)
 
 -- | Create an integer element from a tensor int.
 intElem :: TensorInt -> Elem
@@ -1521,9 +1521,9 @@ twoRefsOf :: Expr -> DSLContext (RClassRef, RClassRef)
 twoRefsOf e = do
   shape <- shapeOf e
   let refs = HS.toList $ abstractShapeAllRefs shape
-  if length refs == 2
-    then let [a, b] = refs in return (a, b)
-    else error $ "Expected exactly 2 refs, got " ++ show (length refs) ++ ": " ++ show refs
+  assert ("Expected exactly 2 refs, got " <> tshow (length refs)  <> ": " <> tshow refs) $
+    length refs == 2
+  let [a, b] = refs in return (a, b)
 
 -- | Helper function to get three aggregated axes from a 3D tensor.
 -- Useful for 3D batched matrix multiplication.
@@ -1531,6 +1531,6 @@ threeRefsOf :: Expr -> DSLContext (RClassRef, RClassRef, RClassRef)
 threeRefsOf e = do
   shape <- shapeOf e
   let refs = HS.toList $ abstractShapeAllRefs shape
-  if length refs == 3
-    then let [a, b, c] = refs in return (a, b, c)
-    else error $ "Expected exactly 3 refs, got " ++ show (length refs) ++ ": " ++ show refs
+  assert ("Expected exactly 3 refs, got " <> tshow (length refs)  <> ": " <> tshow refs) $
+    length refs == 3
+  let [a, b, c] = refs in return (a, b, c)
