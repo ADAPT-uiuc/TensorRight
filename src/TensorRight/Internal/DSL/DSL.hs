@@ -73,10 +73,8 @@ module TensorRight.Internal.DSL.DSL
     newConstMap,
     newConstMaps,
     combineMap,
-    transpose2D,
-    matmul2DHelper,
-    matmul3DHelper,
     twoRefsOf,
+    threeRefsOf,
     Padding (..),
     ConvConfig (..),
     ConvPadding (..),
@@ -212,7 +210,6 @@ import TensorRight.Internal.DSL.Shape
     restrictAbstractShape,
     toAbstractShape,
   )
-import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import TensorRight.Internal.Util.Error (assert)
 
 -- | Create an integer element from a tensor int.
@@ -1537,45 +1534,3 @@ threeRefsOf e = do
   if length refs == 3
     then let [a, b, c] = refs in return (a, b, c)
     else error $ "Expected exactly 3 refs, got " ++ show (length refs) ++ ": " ++ show refs
-
-matmul2DHelper ::
-  (ExprInContext lhs, ExprInContext rhs) =>
-  -- | The left-hand side tensor (shape [M, K])
-  lhs ->
-  -- | The right-hand side tensor (shape [K, N])
-  rhs ->
-  -- | The contracting SI maps.
-  [ParamDesc] ->
-  DSLContext Expr
-matmul2DHelper lhs' rhs' contract = do
-  lhs <- liftInContext lhs'
-  rhs <- liftInContext rhs'
-  (_, _) <- twoRefsOf lhs
-  (_, _) <- twoRefsOf rhs
-  dot lhs rhs contract []
-
-matmul3DHelper ::
-  (ExprInContext lhs, ExprInContext rhs) =>
-  -- | The left-hand side tensor (shape [B, M, K])
-  lhs ->
-  -- | The right-hand side tensor (shape [B, K, N])
-  rhs ->
-  -- | The contracting SI maps.
-  [ParamDesc] ->
-  -- | The batch rclasses.
-  [RClassRef] ->
-  DSLContext Expr
-matmul3DHelper lhs' rhs' contract batch = do
-  lhs <- liftInContext lhs'
-  rhs <- liftInContext rhs'
-  -- Get the three axes from each tensor
-  (_, _, _) <- threeRefsOf lhs -- B, M, K
-  (_, _, _) <- threeRefsOf rhs -- B, K, N
-  dot lhs rhs contract batch
-
--- | Helper function for transpose2D.
-transpose2D :: (ExprInContext e) => e -> DSLContext Expr
-transpose2D e' = do
-  e <- liftInContext e'
-  (a, b) <- twoRefsOf e
-  relabel e [a --> b, b --> a]

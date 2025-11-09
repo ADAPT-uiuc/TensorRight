@@ -32,7 +32,7 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Grisette (SymInteger, symIte, (.&&), (.<), (.<=), (.==), (.>=))
-import TensorRight (NumBinOp (Add, Mul), ToElem, concatTensor, posInf)
+import TensorRight (NumBinOp (Add, Mul), ToElem, posInf)
 import TensorRight.Internal.Core.Tensor (ToDType)
 import TensorRight.Internal.DSL.DSL
   ( ConvConfig (..),
@@ -47,15 +47,17 @@ import TensorRight.Internal.DSL.DSL
     combineMap,
     conv,
     liftInContext,
-    matmul2DHelper,
-    matmul3DHelper,
     newConstMap,
     newNonNegMap,
     numBinOp,
     numBinScalarOp,
     pad,
     precondition,
-    transpose2D,
+    twoRefsOf,
+    threeRefsOf,
+    relabel,
+    dot,
+    concatTensor,
   )
 import TensorRight.Internal.DSL.Expr (checkMapHasRClass, getRClassByMap)
 import qualified TensorRight.Internal.DSL.Expr as E
@@ -129,8 +131,12 @@ transpose ::
   -- | The tensor to transpose
   e ->
   DSLContext Expr
-transpose = transpose2D
+transpose e' = do
+  e <- liftInContext e'
+  (a, b) <- twoRefsOf e
+  relabel e [a --> b, b --> a]
 
+-- TODO: Semantics of enlarge should be implemented in TensorRight/Internal/Core
 -- TASO's enlarge operator!
 -- Split policy: low = floor(d/2), high = d - low, where d = max(s, k) - s per axis.
 enlarge ::
@@ -199,7 +205,13 @@ matmul2D ::
   -- | The contracting SI maps.
   [ParamDesc] ->
   DSLContext Expr
-matmul2D = matmul2DHelper
+matmul2D lhs' rhs' contract = do
+  lhs <- liftInContext lhs'
+  rhs <- liftInContext rhs'
+  (_, _) <- twoRefsOf lhs
+  (_, _) <- twoRefsOf rhs
+  -- TODO: do we need to check the length of contract?
+  dot lhs rhs contract []
 
 -- | TASO's 2D matrix multiplication operator
 matmul3D ::
@@ -213,7 +225,14 @@ matmul3D ::
   -- | Batch RClasses
   [RClassRef] ->
   DSLContext Expr
-matmul3D = matmul3DHelper
+matmul3D lhs' rhs' contract batch = do
+  lhs <- liftInContext lhs'
+  rhs <- liftInContext rhs'
+  -- Get the three axes from each tensor
+  (_, _, _) <- threeRefsOf lhs -- B, M, K
+  (_, _, _) <- threeRefsOf rhs -- B, K, N
+  -- TODO: do we need to check the length of contract and batch?
+  dot lhs rhs contract batch
 
 -- | TASO's 2D matrix multiplication operator
 tasoConv ::

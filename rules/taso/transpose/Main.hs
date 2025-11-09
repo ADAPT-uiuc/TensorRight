@@ -2,7 +2,7 @@ module Main (main) where
 
 import Grisette hiding ((-->))
 import TensorRight
-import TensorRight.Internal.DSL.DSL (newSingletonRClass, twoRefsOf)
+import TensorRight.Internal.DSL.DSL (newSingletonRClass)
 import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, relu, smul, transpose)
 import Prelude hiding (concat)
 
@@ -15,7 +15,6 @@ desugarTranspose _ = do
   s2 <- newMap "s2" rclass
   tA <- newTensor @a "A" [rclass --> s1 @@ "L", rclass --> s2 @@ "R"]
   lhs <- transpose tA
-  (a, b) <- twoRefsOf tA
   rhs <- relabel tA [ByLabel "L" --> ByLabel "R", ByLabel "R" --> ByLabel "L"]
   rewrite "transpose(A) ⇒ relabel(A, swap)" lhs rhs
 
