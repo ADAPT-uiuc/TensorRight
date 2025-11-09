@@ -64,6 +64,7 @@ import qualified TensorRight.Internal.DSL.Expr as E
 import TensorRight.Internal.DSL.Identifier (MapIdentifier)
 import TensorRight.Internal.DSL.Parameters (ParamDesc (..))
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
+import TensorRight.Internal.Util.Error (assert, tshow)
 import Prelude hiding (concat)
 
 data Activation = Relu | None
@@ -208,9 +209,10 @@ matmul2D ::
 matmul2D lhs' rhs' contract = do
   lhs <- liftInContext lhs'
   rhs <- liftInContext rhs'
-  (_, _) <- twoRefsOf lhs
-  (_, _) <- twoRefsOf rhs
-  -- TODO: do we need to check the length of contract?
+  twoRefsOf lhs
+  twoRefsOf rhs
+  assert ("matmul2D: expected 1 contraction rclass, got " <> tshow (length contract)) $
+    length contract == 1
   dot lhs rhs contract []
 
 -- | TASO's 2D matrix multiplication operator
@@ -229,9 +231,12 @@ matmul3D lhs' rhs' contract batch = do
   lhs <- liftInContext lhs'
   rhs <- liftInContext rhs'
   -- Get the three axes from each tensor
-  (_, _, _) <- threeRefsOf lhs -- B, M, K
-  (_, _, _) <- threeRefsOf rhs -- B, K, N
-  -- TODO: do we need to check the length of contract and batch?
+  threeRefsOf lhs -- B, M, K
+  threeRefsOf rhs -- B, K, N
+  assert ("matmul3D: expected 1 contraction rclass, got " <> tshow (length contract)) $
+    length contract == 1
+  assert ("matmul3D: expected 1 batch rclass, got " <> tshow (length batch)) $
+    length batch == 1
   dot lhs rhs contract batch
 
 -- | TASO's 2D matrix multiplication operator

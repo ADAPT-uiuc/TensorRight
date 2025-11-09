@@ -8,6 +8,7 @@ module TensorRight.Internal.Util.Error
     ErrorEnv,
     assert,
     splitWithError,
+    tshow,
   )
 where
 
@@ -31,6 +32,9 @@ type ErrorEnv = ExceptT Error Union
 assert ::
   (UnifiedBranching mode m, MonadError Error m) => Error -> GetBool mode -> m ()
 assert err cond = mrgIf cond (return ()) $ throwError err
+
+tshow :: Show a => a -> T.Text
+tshow = T.pack . show
 
 -- May introduce this into Grisette library in the future
 splitWithError ::
