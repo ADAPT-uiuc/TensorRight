@@ -56,7 +56,7 @@ rule04 :: forall a. AnyDTypeRule a
 rule04 _ = do
   [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
   [rc0Size, rc0Start, rc0End, rc0Stride] <-
-    newMaps ["rc0Start", "rc0Start", "rc0End", "rc0Stride"] rclass0
+    newMaps ["rc0Size", "rc0Start", "rc0End", "rc0Stride"] rclass0
   [rc1Size, rc1Start1, rc1End1, rc1Start2, rc1End2, rc1Stride] <-
     newMaps ["rc1Size", "rc1Start1", "rc1End1", "rc1Start2", "rc1End2", "rc1Stride"] rclass1
 
