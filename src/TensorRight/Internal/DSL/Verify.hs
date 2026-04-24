@@ -299,10 +299,10 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
     Right (rewrite, env) -> do
       putStrLn $ "Verifying rule " <> T.unpack (name rewrite)
       let bound0 = baseRClassBound0 rewrite env
-      (task, nonSingletonRClasses, _singletonRClasses, shape) <-
+      (task, nonFixedRClasses, _, shape) <-
         verifyDSLWithNDim solverConfig rewrite env bound0
       inferredBounds <-
-        inferBound solverConfig task nonSingletonRClasses (rankConditions env) shape
+        inferBound solverConfig task nonFixedRClasses (rankConditions env) shape
       putStrLn $ "Inferred bounds: " <> show inferredBounds
       putStrLn $
         "[INFO"
