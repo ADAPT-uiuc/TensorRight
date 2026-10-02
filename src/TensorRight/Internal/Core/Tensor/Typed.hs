@@ -97,6 +97,7 @@ import Grisette
     symAll,
     symAnd,
     symMax,
+    symMin,
     type (=~>),
   )
 import Grisette.Lib.Control.Monad.Except (mrgThrowError)
@@ -903,18 +904,26 @@ dynamicSlice to DySliceArgs {..} = do
     allAxes sizes `HS.isSubsetOf` tensorAllAxes t
   let otherOriginalShape = removeAxes (allAxes sizes) $ tensorShape t
   assert "sizes must be strictly positive" $ symAll (.> 0) $ asHashMap sizes
-  assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap start
-  assert "start + sizes must be in the range of the dimension" $
+  assert "sizes must not exceed the original dimension" $
     symAnd $
       HM.mapWithKey
         (\k e -> e .<= getAxis k (tensorShape t))
-        (asHashMap $ addAxisMap start $ castAxisMap sizes)
+        (asHashMap sizes)
+  let maxStart =
+        subAxisMap
+          (restrictAxes (allAxes sizes) $ tensorShape t)
+          (castAxisMap sizes)
+  let effectiveStart =
+        zipAxisMap
+          (\raw upper -> symMin upper $ symMax 0 raw)
+          start
+          (castAxisMap maxStart)
   let newShape = unionAxisMap sizes otherOriginalShape
   mrgReturn $
     Tensor
       ( \indices -> do
           let slicedIndices =
-                addAxisMap start $ restrictAxes (allAxes sizes) indices
+                addAxisMap effectiveStart $ restrictAxes (allAxes sizes) indices
           let otherIndices = removeAxes (allAxes sizes) indices
           tensorAccess t $ unionAxisMap slicedIndices otherIndices
       )
