@@ -12,13 +12,13 @@ TensorRight implements the denotational semantics for these operators.
 - TensorRight presents an automatic verification strategy to verify tensor graph rewrites in the unbounded setting, i.e, for arbitrary ranks and sizes, by inferring a bound on aggregated-axis ranks, such that verifying the rewrite for all ranks within the bound implies correctness in the unbounded setting. <br>
 Hence, TensorRight converts the _unbounded-verification_ proof obligation to a finite set of _bounded-verification_ proof obligations, which are then dispatched to an SMT solver using symbolic execution to automatically verify rewrite rules.
 - TensorRight is implemented in Haskell and uses [Grisette](https://github.com/lsrcz/grisette) as the symbolic evaluation engine.
-TensorRight can successfully represent 121 of the 175 rewrites present in [XLA's algebraic simplifier](https://github.com/openxla/xla/blob/main/xla/hlo/transforms/simplifiers/algebraic_simplifier.cc) and is able to verify 115 of those in the unbounded setting.
+TensorRight can successfully represent 125 of the 200+ rewrites present in [XLA's algebraic simplifier](https://github.com/openxla/xla/blob/main/xla/hlo/transforms/simplifiers/algebraic_simplifier.cc) and is able to verify 123 of those in the unbounded setting.
 
 ## Publications
 
 - [TensorRight: Automated Verification of Tensor Graph Rewrites](https://dl.acm.org/doi/10.1145/3704865) <br/>
 Jai Arora, Sirui Lu, Devansh Jain, Tianfan Xu, Farzin Houshmand, Phitchaya Mangpo Phothilimthana, Mohsen Lesani, Praveen Narayanan, Karthik Srinivasa Murthy, Rastislav Bodik, Amit Sabne, and Charith Mendis. <br/>
-In Proceedings of the 52nd ACM SIGPLAN Symposium on Principles of Programming Languages (POPL'25), January 2025, Denver, Colorado, USA (To Appear)
+In Proceedings of the 52nd ACM SIGPLAN Symposium on Principles of Programming Languages (POPL'25), January 2025, Denver, Colorado, USA
 
 <details class="bibtex">
     <summary>BibTeX</summary>
@@ -85,11 +85,11 @@ git clone https://github.com/ADAPT-uiuc/TensorRight.git && cd TensorRight/ && st
 # Regression Tests: all testcases should pass
 stack test
 
-# Verifying Rewrite Rules: 115/118 passed
+# Verifying Rewrite Rules: 123/125 passed
 make verify
 ```
 
-Running `make verify` tries to verify all the 118 implemented rewrite rules.
+Running `make verify` tries to verify all the 125 implemented rewrite rules.
 It results in 3 expected timeouts (the actual number could vary).
 
 ## Usage
@@ -100,7 +100,7 @@ Please refer to the [implemented rules](./rules/) for more examples.
 Consider the `DySliceToSlice` rule that we would like to express and verify in our DSL.
 
 $$
-\mathsf{dy\hbox{-}slice}(\mathsf{X}, B, L) \Rightarrow_{E - B' = L \ \wedge \ P = 1 \ \wedge \ B' = B } \mathsf{slice}(\mathsf{X}, B', E, P)
+\mathsf{dy\hbox{-}slice}(\mathsf{X}, B, L) \Rightarrow_{B' = \min(\max(B, 0), S - L) \ \wedge \ E = B' + L \ \wedge \ P = 1} \mathsf{slice}(\mathsf{X}, B', E, P)
 $$
 
 The $\mathsf{dy\hbox{-}slice}$ operator extracts a sub-tensor from the input tensor $\mathsf{X}$, where the start-index for each axis is specified in $B$ and the length of the slice along each axis is passed in $L$. 
@@ -108,9 +108,7 @@ Meanwhile, the $\mathsf{slice}$ operator also extracts a sub-tensor from within 
 The start-indices for the bounding box are specified in $B'$, while the end-indices (exclusive) are specified in $E$.
 $P$ specifies the stride for each axis, which determines the step size between elements in the bounding box.
 
-The `DySliceToSlice` rule is generally not correct, unless $E - B'$ (the size of the bounding box in $\mathsf{slice}$) is equal to $L$ (the length in $\mathsf{dy\hbox{-}slice}$).
-The other requirements are that $\mathsf{slice}$ should skip no elements, i.e., $P=1$, and the start indices in $\mathsf{slice}$ and $\mathsf{dy\hbox{-}slice}$ must be the same, i.e., $B' = B$.
-Since these are specified in the precondition, the RHS expression is equivalent to the LHS expression.
+`DynamicSlice` clamps its start index independently on every axis: $B' = \min(\max(B, 0), S-L)$, where $S$ is the input extent on that axis. Its slice size $L$ must be positive and at most $S$. Thus the equivalent static slice starts at $B'$, ends at $E = B' + L$, and has unit stride. This matches the [XLA DynamicSlice semantics](https://openxla.org/xla/operation_semantics#dynamicslice).
 
 We support verification of boolean, integer, and real valued tensors.
 Since we would like to verify the `DySliceToSlice` rule for all tensor types, we declare the rule in our DSL as follows:
@@ -138,8 +136,8 @@ We represent these using abstract maps, which can be instantiated to maps of con
 We can declare maps on an `RClass` in our DSL using `newMaps`:
 
 ```haskell
-[size, start, start', length, end, stride] <-
-    newMaps ["size", "start", "start'", "length", "end", "stride"] rcls
+[size, start, length] <-
+    newMaps ["size", "start", "length"] rcls
 ```
 
 We then declare an abstract tensor of shape `rcls --> size` containing elements of type `a` using `newTensor`:
@@ -156,22 +154,23 @@ We define LHS and RHS tensor expressions using the operators available in our DS
 lhs <-
   dynamicSlice tensor $
     DySlice {start = [rcls --> start], sizes = [rcls --> length]}
+effectiveStart <-
+  combineMap
+    "effectiveStart"
+    (\[start, size, length] -> symMin (size - length) $ symMax 0 start)
+    [start, size, length]
+end <- combineMap "end" sum [effectiveStart, length]
+stride <- newConstMap "stride" 1 rcls
 rhs <-
   slice tensor $
     Slice
-    { start = [rcls --> start'],
+    { start = [rcls --> effectiveStart],
       end = [rcls --> end],
       strides = [rcls --> stride]
     }
 ```
 
-We can specify preconditions using `precondition`:
-
-```haskell
-precondition [end, start', length] $ \[e, s', l] -> e - s' .== l
-precondition [stride] $ \[p] -> p .== 1
-precondition [start, start'] $ \[s, s'] -> s' .== s
-```
+Here the RHS attributes are derived directly from the DynamicSlice semantics, so this rule needs no additional preconditions. Other rules can use `precondition` to state their side conditions.
 
 Finally, we declare a rewrite rule using the `rewrite` construct:
 
@@ -185,25 +184,27 @@ Putting everything together, the specification of the `DySliceToSlice` rule in T
 rule :: forall a. AnyDTypeRule a
 rule = do
   rcls <- newRClass "rcls"
-  [size, start, start', length, end, stride] <-
-    newMaps ["size", "start", "start'", "length", "end", "stride"] rcls
+  [size, start, length] <-
+    newMaps ["size", "start", "length"] rcls
   tensor <- newTensor @a "X" [rcls --> size]
 
   lhs <-
     dynamicSlice tensor $
       DySlice {start = [rcls --> start], sizes = [rcls --> length]}
+  effectiveStart <-
+    combineMap
+      "effectiveStart"
+      (\[start, size, length] -> symMin (size - length) $ symMax 0 start)
+      [start, size, length]
+  end <- combineMap "end" sum [effectiveStart, length]
+  stride <- newConstMap "stride" 1 rcls
   rhs <-
     slice tensor $
       Slice
-      { start = [rcls --> start'],
+      { start = [rcls --> effectiveStart],
         end = [rcls --> end],
         strides = [rcls --> stride]
       }
-
-  precondition [end, start', length] $
-    \[end, start', length] -> end - start' .== length
-  precondition [stride] $ \[stride] -> stride .== 1
-  precondition [start, start'] $ \[start, start'] -> start' .== start
 
   rewrite "DynamicSlice(X) => Slice(X)" lhs rhs
 ```
