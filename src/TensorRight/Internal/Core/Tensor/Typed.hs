@@ -961,7 +961,7 @@ dynamicUpdateSlice to update start = do
           (castAxisMap maxStart)
   mrgReturn $
     Tensor
-    ( \indices -> do
+      ( \indices -> do
           let geqStart = zipFoldAxisMap (.>=) (con True) (.&&) indices effectiveStart
           let leqUpdateEnd =
                 zipFoldAxisMap
