@@ -944,30 +944,35 @@ dynamicUpdateSlice to update start = do
     allAxes start == allAxes (tensorShape u)
   assert "update must have the same axes as original" $
     tensorAllAxes t == tensorAllAxes u
-  assert "start must be non-negative" $ symAll (.>= 0) $ asHashMap start
   assert "update sizes must be strictly positive" $
     symAll (.> 0) $
       asHashMap $
         tensorShape u
-  assert "start + update must be in the range of the dimension" $
+  assert "update sizes must not exceed the original dimension" $
     symAnd $
       HM.mapWithKey
         (\k e -> e .<= getAxis k (tensorShape t))
-        (asHashMap $ addAxisMap start $ castAxisMap (tensorShape u))
+        (asHashMap $ tensorShape u)
+  let maxStart = subAxisMap (tensorShape t) $ tensorShape u
+  let effectiveStart =
+        zipAxisMap
+          (\raw upper -> symMin upper $ symMax 0 raw)
+          start
+          (castAxisMap maxStart)
   mrgReturn $
     Tensor
-      ( \indices -> do
-          let geqStart = zipFoldAxisMap (.>=) (con True) (.&&) indices start
+    ( \indices -> do
+          let geqStart = zipFoldAxisMap (.>=) (con True) (.&&) indices effectiveStart
           let leqUpdateEnd =
                 zipFoldAxisMap
                   (.<)
                   (con True)
                   (.&&)
                   indices
-                  (addAxisMap start $ castAxisMap $ tensorShape u)
+                  (addAxisMap effectiveStart $ castAxisMap $ tensorShape u)
           mrgIf
             (geqStart .&& leqUpdateEnd)
-            (tensorAccess u $ subAxisMap indices start)
+            (tensorAccess u $ subAxisMap indices effectiveStart)
             (tensorAccess t indices)
       )
       (tensorShape t)

@@ -1175,6 +1175,31 @@ tensorTest =
                     fromKVPairs [(Axis "a", 2), (Axis "b", 4), (Axis "c", 5)],
                 expected = Just $ TensorElemVal "xa2b4c5"
               },
+          toTensorTest "negative starts are clamped to zero" $ do
+            let negativeStart = fromKVPairs [(Axis "a", -1), (Axis "b", -2), (Axis "c", -3)]
+            TensorTest
+              { tensor = dynamicUpdateSlice x y negativeStart,
+                shape = Just shape,
+                access = Just $ fromKVPairs [(Axis "a", 1), (Axis "b", 2), (Axis "c", 1)],
+                expected = Just $ TensorElemVal "ya1b2c1"
+              },
+          toTensorTest "overflowing starts are clamped to the final valid start" $ do
+            let overflowingStart = fromKVPairs [(Axis "a", 100), (Axis "b", 100), (Axis "c", 100)]
+            TensorTest
+              { tensor = dynamicUpdateSlice x y overflowingStart,
+                shape = Just shape,
+                access = Just $ fromKVPairs [(Axis "a", 4), (Axis "b", 5), (Axis "c", 6)],
+                expected = Just $ TensorElemVal "ya1b2c1"
+              },
+          toTensorTest "update sizes exceed the original shape even with a negative start" $ do
+            let oversizedUpdate = simpleTensor @SymInteger "y" [("a", 6), ("b", 3), ("c", 2)]
+            let negativeStart = fromKVPairs [(Axis "a", -10), (Axis "b", 0), (Axis "c", 0)]
+            TensorTest
+              { tensor = dynamicUpdateSlice x oversizedUpdate negativeStart,
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              },
           toTensorTest "update sizes are zero" $ do
             let newUpdate = simpleTensor @SymInteger "y" [("a", 2), ("b", 3), ("c", 0)]
             TensorTest
