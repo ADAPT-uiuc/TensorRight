@@ -45,11 +45,16 @@ rule02 _ = do
       [rclass --> rcStart]
 
   rcInt <- newConstMap "rcInt" 0 rclass
-  rcHigh <- combineMap "rcHigh" (\[ns, os, s] -> ns - os - s) [rcNewSize, rcOrigSize, rcStart]
+  rcEffectiveStart <-
+    combineMap
+      "rcEffectiveStart"
+      (\[s, newSize, origSize] -> symMin (newSize - origSize) $ symMax 0 s)
+      [rcStart, rcNewSize, rcOrigSize]
+  rcHigh <- combineMap "rcHigh" (\[ns, os, s] -> ns - os - s) [rcNewSize, rcOrigSize, rcEffectiveStart]
   rhs <-
     pad tA ("a" :: a) $
       Padding
-        { low = [rclass --> rcStart],
+        { low = [rclass --> rcEffectiveStart],
           high = [rclass --> rcHigh],
           interior = [rclass --> rcInt]
         }
@@ -92,7 +97,17 @@ rule04 _ = do
       )
       [rclass --> rcStart0]
 
-  rcStart2 <- combineMap "rcStart2" sum [rcStart0, rcStart1]
+  rcOuterEffectiveStart <-
+    combineMap
+      "rcOuterEffectiveStart"
+      (\[s, origSize, innerSize] -> symMin (origSize - innerSize) $ symMax 0 s)
+      [rcStart0, rcSizeA, rcLength]
+  rcInnerEffectiveStart <-
+    combineMap
+      "rcInnerEffectiveStart"
+      (\[s, innerSize, updateSize] -> symMin (innerSize - updateSize) $ symMax 0 s)
+      [rcStart1, rcLength, rcSizeB]
+  rcStart2 <- combineMap "rcStart2" sum [rcOuterEffectiveStart, rcInnerEffectiveStart]
   rhs <- dynamicUpdateSlice tA tB [rclass --> rcStart2]
   rewrite "DynamicUpdateSlice(A, DynamicUpdateSlice(DynamicSlice(A, ...), B, ...), ...)) ⇒ DynamicUpdateSlice(A, B, ...)" lhs rhs
 

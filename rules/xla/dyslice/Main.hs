@@ -18,11 +18,16 @@ rule01 _ = do
         }
 
   rcStride <- newConstMap "rcStride" 1 rclass
-  rcEnd <- combineMap "rcEnd" sum [rcStart, rcLength]
+  rcEffectiveStart <-
+    combineMap
+      "rcEffectiveStart"
+      (\[s, size, length] -> symMin (size - length) $ symMax 0 s)
+      [rcStart, rcSize, rcLength]
+  rcEnd <- combineMap "rcEnd" sum [rcEffectiveStart, rcLength]
   rhs <-
     slice tA $
       Slice
-        { start = [rclass --> rcStart],
+        { start = [rclass --> rcEffectiveStart],
           end = [rclass --> rcEnd],
           strides = [rclass --> rcStride]
         }
@@ -115,7 +120,17 @@ rule05 _ = do
           sizes = [rclass --> rcLengthOuter]
         }
 
-  rcStartRhs <- combineMap "rcStartRhs" sum [rcStartInner, rcStartOuter]
+  rcInnerEffectiveStart <-
+    combineMap
+      "rcInnerEffectiveStart"
+      (\[s, size, length] -> symMin (size - length) $ symMax 0 s)
+      [rcStartInner, rcSize, rcLengthInner]
+  rcOuterEffectiveStart <-
+    combineMap
+      "rcOuterEffectiveStart"
+      (\[s, innerLength, outerLength] -> symMin (innerLength - outerLength) $ symMax 0 s)
+      [rcStartOuter, rcLengthInner, rcLengthOuter]
+  rcStartRhs <- combineMap "rcStartRhs" sum [rcInnerEffectiveStart, rcOuterEffectiveStart]
   rhs <-
     dynamicSlice tA $
       DySlice
