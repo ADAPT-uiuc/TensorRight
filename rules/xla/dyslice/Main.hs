@@ -46,7 +46,6 @@ rule02 _ = do
         { start = [rclass --> rcStart],
           sizes = [rclass --> rcLength]
         }
-  precondition [rcStart] $ \[s] -> s .== 0
   precondition [rcLength, rcSize] $ \[l, s] -> l .== s
 
   let rhs = tA
@@ -157,6 +156,34 @@ rule06 = do
   rhs <- constant @TensorInt "a" [rclass --> rhsSize]
   rewrite "DynamicSlice(Iota) ⇒ index" lhs rhs
 
+-- DynamicSlice clamps every start independently. If one output dimension has
+-- the operand's full extent, its effective start is always zero.
+-- https://github.com/openxla/xla/blob/cb214917224f5643aa8efc96823a920c42f47336/xla/hlo/transforms/simplifiers/algebraic_simplifier.cc#L7978-L7999
+rule07 :: forall a. AnyDTypeRule a
+rule07 _ = do
+  [rclass0, rclass1] <- newRClasses ["rclass0", "rclass1"]
+  [rc0Size, rc0Start, rc0Length] <-
+    newMaps ["rc0Size", "rc0Start", "rc0Length"] rclass0
+  [rc1Size, rc1Start, rc1Length] <-
+    newMaps ["rc1Size", "rc1Start", "rc1Length"] rclass1
+  rc0Zero <- newConstMap "rc0Zero" 0 rclass0
+
+  tA <- newTensor @a "A" [rclass0 --> rc0Size, rclass1 --> rc1Size]
+  lhs <-
+    dynamicSlice tA $
+      DySlice
+        { start = [rclass0 --> rc0Start, rclass1 --> rc1Start],
+          sizes = [rclass0 --> rc0Length, rclass1 --> rc1Length]
+        }
+  precondition [rc0Length, rc0Size] $ \[length, size] -> length .== size
+  rhs <-
+    dynamicSlice tA $
+      DySlice
+        { start = [rclass0 --> rc0Zero, rclass1 --> rc1Start],
+          sizes = [rclass0 --> rc0Length, rclass1 --> rc1Length]
+        }
+  rewrite "DynamicSlice(A, full dimension, ...) ⇒ DynamicSlice(A, start=0, ...)" lhs rhs
+
 main :: IO ()
 main = do
   print "############################## rule01 ##############################"
@@ -169,3 +196,5 @@ main = do
   verifyAnyDTypeDSL rule04
   print "############################## rule05 ##############################"
   verifyAnyDTypeDSL rule05
+  print "############################## rule07 ##############################"
+  verifyAnyDTypeDSL rule07
