@@ -68,4 +68,4 @@ desugarEnlarge _ = do
 main :: IO ()
 main = do
   putStrLn "######################## TASO enlarge ########################"
-  verifyNumDSLWith (withTimeout 10000000 z3) desugarEnlarge
+  verifyNumDSLWith (withTimeout 5000000 z3) desugarEnlarge
