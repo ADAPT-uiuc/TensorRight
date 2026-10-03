@@ -15,6 +15,12 @@ cradle:
     - path: "./rules/taso/concat/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-concat"
 
+    - path: "./rules/taso/conv/Main.hs"
+      component: "tensor-right:exe:rules-taso-conv"
+
+    - path: "./rules/taso/conv/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-conv"
+
     - path: "./rules/taso/enlarge/Main.hs"
       component: "tensor-right:exe:rules-taso-enlarge"
 

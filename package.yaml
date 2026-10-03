@@ -99,6 +99,12 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  rules-taso-conv:
+    source-dirs: rules/taso/conv
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
   rules-taso-ewadd:
     source-dirs: rules/taso/ewadd
     main: Main.hs
