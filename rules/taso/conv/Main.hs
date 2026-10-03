@@ -10,7 +10,7 @@ import qualified TensorRight.Internal.DSL.TASO as TASO
 -- corresponding rank-one rclasses and asserts padding semantics in Core.
 withConv2D ::
   forall a b.
-  ToDType a =>
+  (ToDType a) =>
   (Expr -> Expr -> ConvConfig -> DSLContext b) ->
   DSLContext b
 withConv2D k = do

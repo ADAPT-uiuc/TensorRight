@@ -22,8 +22,9 @@ module TensorRight.Internal.DSL.TASO
   )
 where
 
-import qualified Data.HashSet as HS
+import Control.Monad.Except (MonadError (throwError))
 import Data.Foldable (traverse_)
+import qualified Data.HashSet as HS
 import TensorRight.Internal.Core.Tensor
   ( DType (IntType, RealType),
     ToDType,
@@ -31,14 +32,14 @@ import TensorRight.Internal.Core.Tensor
   )
 import TensorRight.Internal.Core.Tensor.TensorInt (posInf)
 import TensorRight.Internal.DSL.DSL
-  ( NumBinOp (Add, Mul),
+  ( ConvConfig (..),
     DSLContext,
     Expr,
     ExprInContext,
+    NumBinOp (Add, Mul),
     ValidNum,
     clampScalar,
     concatTensor,
-    ConvConfig (..),
     dot,
     liftInContext,
     numBinOp,
@@ -49,21 +50,20 @@ import TensorRight.Internal.DSL.DSL
     tasoConvImpl,
     typeOf,
   )
-import Control.Monad.Except (MonadError (throwError))
-import qualified TensorRight.Internal.DSL.Expr as E
 import TensorRight.Internal.DSL.Expr
   ( TasoPaddingMode (..),
     UExpr (UEnlarge),
     internWithCheck,
   )
+import qualified TensorRight.Internal.DSL.Expr as E
+import TensorRight.Internal.DSL.Parameters (ParamDesc (ParamDesc))
 import TensorRight.Internal.DSL.Shape
   ( RClassRef,
     abstractShapeAllRefs,
     getRClassByRClassRef,
   )
-import TensorRight.Internal.DSL.Parameters (ParamDesc (ParamDesc))
-import TensorRight.Internal.Util.Error (assert)
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
+import TensorRight.Internal.Util.Error (assert)
 import Prelude hiding (concat)
 
 -- | TASO's elementwise addition has exactly TensorRight's numeric

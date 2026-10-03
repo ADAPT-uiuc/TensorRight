@@ -134,10 +134,10 @@ import TensorRight.Internal.DSL.Expr
     Expr,
     NumTensorAssumption (NumTensorAssumption),
     PaddingArgsExpr (PaddingArgsExpr, high, interior, low),
-    TasoPaddingMode,
     Params,
     Rewrite,
     SliceArgsExpr (SliceArgsExpr, end, start, strides),
+    TasoPaddingMode,
     UExpr
       ( UBoolBinOp,
         UBoolScalarBinOp,

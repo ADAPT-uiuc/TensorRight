@@ -67,13 +67,11 @@ import TensorRight.Internal.Core.Tensor
     constantTensor,
     conv,
     convBase,
-    tasoConv,
     createTensor,
     dot,
     dynamicSlice,
     dynamicUpdateSlice,
     enlarge,
-    tasoEnlarge,
     iota,
     numBinOp,
     numScalarBinOp,
@@ -86,6 +84,8 @@ import TensorRight.Internal.Core.Tensor
     reverseTensor,
     select,
     slice,
+    tasoConv,
+    tasoEnlarge,
   )
 import TensorRight.Internal.Core.Tensor.Typed
   ( ConvConfigArgs
@@ -103,10 +103,10 @@ import TensorRight.Internal.Core.Tensor.Typed
         convLowPadding,
         convRDilation
       ),
-    TasoPaddingMode (TasoSame, TasoValid),
     DySliceArgs (DySliceArgs, sizes, start),
     PaddingArgs (PaddingArgs, highPad, interiorPad, lowPad),
     SliceArgs (SliceArgs, end, start, strides),
+    TasoPaddingMode (TasoSame, TasoValid),
     TensorElem (TensorElemVal),
   )
 import TensorRight.Internal.DSL.Expr
@@ -133,7 +133,6 @@ import TensorRight.Internal.DSL.Expr
         Constant,
         Conv,
         ConvBase,
-        TasoConv,
         Dot,
         DynamicSlice,
         DynamicUpdateSlice,
@@ -150,6 +149,7 @@ import TensorRight.Internal.DSL.Expr
         ReverseTensor,
         Select,
         Slice,
+        TasoConv,
         Var
       ),
     PaddingArgsExpr (PaddingArgsExpr, high, interior, low),
@@ -536,17 +536,18 @@ eval'
     let coreMode = case mode of
           Same -> TasoSame
           Valid -> TasoValid
-    return $ tasoConv
-      i
-      w
-      coreMode
-      ConvConfigArgs
-        { convBatchAxes = batchAxes,
-          convFeatureAxes = featureAxes,
-          convOutputFeatureAxes = outputFeatureAxes,
-          convStrides = s,
-          convContractingSIMap = si
-        }
+    return $
+      tasoConv
+        i
+        w
+        coreMode
+        ConvConfigArgs
+          { convBatchAxes = batchAxes,
+            convFeatureAxes = featureAxes,
+            convOutputFeatureAxes = outputFeatureAxes,
+            convStrides = s,
+            convContractingSIMap = si
+          }
 eval' (Clamp _ emin' e' emax') = do
   emin <- eval emin'
   e <- eval e'

@@ -802,7 +802,8 @@ enlarge to targetSizes lowPadding = do
   assert "enlarge: lower-padding axes must equal target axes" $
     allAxes lowPadding == targetAxes
   assert "enlarge: target sizes must be non-negative" $
-    symAll (.>= 0) $ asHashMap targetSizes
+    symAll (.>= 0) $
+      asHashMap targetSizes
   let originalSizes = restrictAxes targetAxes $ tensorShape t
       extraPadding = mapAxisMap (symMax 0) $ subAxisMap targetSizes originalSizes
   assert "enlarge: lower padding must be floor(extra padding / 2)" $
@@ -842,7 +843,8 @@ tasoEnlarge to referenceShape spatialAxes = do
       referenceSpatial = restrictAxes spatialAxes referenceShape
       extra = subAxisMap referenceSpatial sourceSpatial
   assert "tasoEnlarge: source spatial sizes must not exceed reference sizes" $
-    symAll (.>= 0) $ asHashMap extra
+    symAll (.>= 0) $
+      asHashMap extra
   low <- safeDivAxisMap extra $ mapAxisMap (const 2) extra
   let high = subAxisMap extra low
   pad t 0 $ PaddingArgs {lowPad = low, interiorPad = mempty, highPad = high}
@@ -1224,7 +1226,9 @@ tasoConv inputo weightso mode config@ConvConfigArgs {..} = do
   (outputSpatial, lowPadding, highPadding) <- case mode of
     TasoValid -> do
       assert "tasoConv: VALID input spatial sizes must cover the kernel" $
-        symAll (.>= 0) $ asHashMap $ subAxisMap inputSpatial kernelSpatial
+        symAll (.>= 0) $
+          asHashMap $
+            subAxisMap inputSpatial kernelSpatial
       output <- safeDivAxisMap (addAxisMap (subAxisMap inputSpatial kernelSpatial) strideSizes) strideSizes
       let zeroPadding = mapAxisMap (const 0) inputSpatial
       return (output, zeroPadding, zeroPadding)

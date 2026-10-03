@@ -9,7 +9,7 @@ import TensorRight.Internal.DSL.Shape (RClassRef (ByLabel))
 import TensorRight.Internal.DSL.TASO (concat, ewadd, ewmul, relu, smul, transpose)
 import Prelude hiding (concat)
 
-newMatrix :: forall a. ToDType a => Text -> DSLContext (Expr, RClassIdentifier, RClassRef, RClassRef)
+newMatrix :: forall a. (ToDType a) => Text -> DSLContext (Expr, RClassIdentifier, RClassRef, RClassRef)
 newMatrix name = do
   axes <- newRClass $ name <> "-axes"
   rows <- newMap (name <> "-rows") axes
