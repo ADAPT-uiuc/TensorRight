@@ -523,7 +523,6 @@ eval'
       weight
       mode
       ConvConfigArgsExpr {..}
-      ConvPaddingArgsExpr {..}
     ) = do
     i <- eval input
     w <- eval weight
@@ -534,10 +533,6 @@ eval'
     outputFeatureAxes <- rclassesToAxes rhsShape outputFeatureRClasses
     s <- getIndicesFromParams strides
     si <- getIndicesFromParams contractingSIMaps
-    l <- getSizesFromParams low
-    ld <- getSizesFromParams ldilation
-    h <- getSizesFromParams high
-    rd <- getSizesFromParams rdilation
     let coreMode = case mode of
           Same -> TasoSame
           Valid -> TasoValid
@@ -551,12 +546,6 @@ eval'
           convOutputFeatureAxes = outputFeatureAxes,
           convStrides = s,
           convContractingSIMap = si
-        }
-      ConvPaddingArgs
-        { convLowPadding = l,
-          convLDilation = ld,
-          convHighPadding = h,
-          convRDilation = rd
         }
 eval' (Clamp _ emin' e' emax') = do
   emin <- eval emin'

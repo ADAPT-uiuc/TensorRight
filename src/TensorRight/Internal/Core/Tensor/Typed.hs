@@ -1201,9 +1201,8 @@ tasoConv ::
   t2 ->
   TasoPaddingMode ->
   ConvConfigArgs ->
-  ConvPaddingArgs ->
   ErrorEnv (Tensor (TensorNum a))
-tasoConv inputo weightso mode config@ConvConfigArgs {..} padding@ConvPaddingArgs {..} = do
+tasoConv inputo weightso mode config@ConvConfigArgs {..} = do
   input <- tensor inputo
   weights <- tensor weightso
   let inputShape = tensorShape input
@@ -1222,27 +1221,40 @@ tasoConv inputo weightso mode config@ConvConfigArgs {..} padding@ConvPaddingArgs
   assert "tasoConv: expected one output-feature axis" $ HS.size convOutputFeatureAxes == 1
   assert "tasoConv: expected two spatial axes" $ HS.size spatialAxes == 2
   assert "tasoConv: strides must be positive" $ symAll (.>= 1) $ asHashMap convStrides
-  assert "tasoConv: input dilation must be one" $ sameAxisMap convLDilation ones
-  assert "tasoConv: kernel dilation must be one" $ sameAxisMap convRDilation ones
-  case mode of
+  (outputSpatial, lowPadding, highPadding) <- case mode of
     TasoValid -> do
-      assert "tasoConv: VALID low padding must be zero" $
-        sameAxisMap convLowPadding (mapAxisMap (const 0) convLowPadding)
-      assert "tasoConv: VALID high padding must be zero" $
-        sameAxisMap convHighPadding (mapAxisMap (const 0) convHighPadding)
+      assert "tasoConv: VALID input spatial sizes must cover the kernel" $
+        symAll (.>= 0) $ asHashMap $ subAxisMap inputSpatial kernelSpatial
+      output <- safeDivAxisMap (addAxisMap (subAxisMap inputSpatial kernelSpatial) strideSizes) strideSizes
+      let zeroPadding = mapAxisMap (const 0) inputSpatial
+      return (output, zeroPadding, zeroPadding)
     TasoSame -> do
-      outputSpatial <- safeDivAxisMap (subAxisMap (addAxisMap inputSpatial strideSizes) ones) strideSizes
+      output <- safeDivAxisMap (subAxisMap (addAxisMap inputSpatial strideSizes) ones) strideSizes
       let totalPadding =
             mapAxisMap (symMax 0) $
               subAxisMap
-                (addAxisMap (mulAxisMap (subAxisMap outputSpatial ones) strideSizes) kernelSpatial)
+                (addAxisMap (mulAxisMap (subAxisMap output ones) strideSizes) kernelSpatial)
                 inputSpatial
-      expectedLow <- safeDivAxisMap totalPadding (mapAxisMap (const 2) totalPadding)
-      assert "tasoConv: SAME low padding is the lower half of total padding" $
-        sameAxisMap convLowPadding expectedLow
-      assert "tasoConv: SAME high padding is the remaining total padding" $
-        sameAxisMap convHighPadding (subAxisMap totalPadding expectedLow)
-  conv input weights config padding
+      lowPadding <- safeDivAxisMap totalPadding (mapAxisMap (const 2) totalPadding)
+      return (output, lowPadding, subAxisMap totalPadding lowPadding)
+  result <-
+    conv
+      input
+      weights
+      config
+      ConvPaddingArgs
+        { convLowPadding = lowPadding,
+          convLDilation = ones,
+          convHighPadding = highPadding,
+          convRDilation = ones
+        }
+  let resultShape =
+        unionAxisMap
+          (restrictAxes convBatchAxes inputShape)
+          $ unionAxisMap
+            (restrictAxes convOutputFeatureAxes weightShape)
+            outputSpatial
+  return result {tensorShape = resultShape}
 
 clamp ::
   ( TensorOperand t (TensorNum a),

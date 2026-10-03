@@ -1365,17 +1365,12 @@ tasoConvImpl ::
   weights ->
   TasoPaddingMode ->
   ConvConfig ->
-  ConvPadding ->
   DSLContext Expr
-tasoConvImpl input' weights' mode config@ConvConfig {..} ConvPadding {..} = do
+tasoConvImpl input' weights' mode config@ConvConfig {..} = do
   input <- liftInContext input'
   weights <- liftInContext weights'
   let stridesMap = toParamMaps strides
       siMapsMap = toParamMaps contractingSIMaps
-      padl = toParamMaps low
-      padldilation = toParamMaps ldilation
-      padh = toParamMaps high
-      padrdilation = toParamMaps rdilation
   internWithCheck
     ( UTasoConv
         input
@@ -1388,27 +1383,11 @@ tasoConvImpl input' weights' mode config@ConvConfig {..} ConvPadding {..} = do
             strides = stridesMap,
             contractingSIMaps = siMapsMap
           }
-        ConvPaddingArgsExpr
-          { low = padl,
-            ldilation = padldilation,
-            high = padh,
-            rdilation = padrdilation
-          }
     )
     $ do
-      inputShapeTy@(_, dtype) <- shapeAndTypeOf input
-      padElem <- case dtype of
-        IntType -> return $ toElem (0 :: TensorInt)
-        RealType -> return $ toElem (0 :: TensorReal)
-        BoolType -> mrgThrowError "Cannot TASO-conv a boolean tensor"
-      inputPaddedShapeTy <-
-        padCheck inputShapeTy padElem $
-          Padding {low = low, interior = ldilation, high = high}
+      inputShapeTy <- shapeAndTypeOf input
       weightsShapeTy <- shapeAndTypeOf weights
-      weightsPaddedShapeTy <-
-        padCheck weightsShapeTy padElem $
-          Padding {low = [], interior = rdilation, high = []}
-      convBaseCheck inputPaddedShapeTy weightsPaddedShapeTy config
+      convBaseCheck inputShapeTy weightsShapeTy config
 
 -- | Clamp operator.
 clamp ::

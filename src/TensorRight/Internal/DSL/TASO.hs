@@ -39,10 +39,8 @@ import TensorRight.Internal.DSL.DSL
     clampScalar,
     concatTensor,
     ConvConfig (..),
-    ConvPadding (..),
     dot,
     liftInContext,
-    newMap,
     numBinOp,
     numBinScalarOp,
     rankPrecondition,
@@ -195,22 +193,7 @@ tasoConv config mode activation input' weights' = do
   inputRClasses <- traverse (getRClassByRClassRef inputShape) inputRefs
   weightRClasses <- traverse (getRClassByRClassRef weightShape) weightRefs
   traverse_ (`rankPrecondition` 1) $ inputRClasses <> weightRClasses
-  let freshPadding name =
-        traverse
-          (\ref -> ParamDesc ref <$> (newMap name =<< getRClassByRClassRef inputShape ref))
-          spatialRefs
-  low <- freshPadding "tasoConvLow"
-  ldilation <- freshPadding "tasoConvLDilation"
-  high <- freshPadding "tasoConvHigh"
-  rdilation <- freshPadding "tasoConvRDilation"
-  output <-
-    tasoConvImpl input weights mode config $
-      ConvPadding
-        { low = low,
-          ldilation = ldilation,
-          high = high,
-          rdilation = rdilation
-        }
+  output <- tasoConvImpl input weights mode config
   case activation of
     None -> return output
     Relu -> relu @a output

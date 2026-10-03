@@ -223,8 +223,7 @@ data ExprDescription
       { _input :: Int,
         _weight :: Int,
         _tasoPaddingMode :: TasoPaddingMode,
-        _convConfig :: ConvConfigArgsExpr,
-        _convPadding :: ConvPaddingArgsExpr
+        _convConfig :: ConvConfigArgsExpr
       }
   | ClampDescription {_min :: Int, _expr :: Int, _max :: Int}
   | ClampScalarDescription
@@ -298,8 +297,7 @@ data UExpr
       { _input :: Expr,
         _weight :: Expr,
         _tasoPaddingMode :: TasoPaddingMode,
-        _convConfig :: ConvConfigArgsExpr,
-        _convPadding :: ConvPaddingArgsExpr
+        _convConfig :: ConvConfigArgsExpr
       }
   | UClamp {_min :: Expr, _expr :: Expr, _max :: Expr}
   | UClampScalar
@@ -340,7 +338,7 @@ describe (URelabel e m) = RelabelDescription (_id e) m
 describe (UDot l r c b) = DotDescription (_id l) (_id r) c b
 describe (UConvBase i w c) = ConvBaseDescription (_id i) (_id w) c
 describe (UConv i w c p) = ConvDescription (_id i) (_id w) c p
-describe (UTasoConv i w m c p) = TasoConvDescription (_id i) (_id w) m c p
+describe (UTasoConv i w m c) = TasoConvDescription (_id i) (_id w) m c
 describe (UClamp mi e ma) = ClampDescription (_id mi) (_id e) (_id ma)
 describe (UClampScalar mi e ma) = ClampScalarDescription mi (_id e) ma
 describe (UReverseTensor e a) = ReverseTensorDescription (_id e) a
@@ -440,8 +438,7 @@ data Expr
         _input :: Expr,
         _weight :: Expr,
         _tasoPaddingMode :: TasoPaddingMode,
-        _convConfig :: ConvConfigArgsExpr,
-        _convPadding :: ConvPaddingArgsExpr
+        _convConfig :: ConvConfigArgsExpr
       }
   | Clamp {_id :: Int, _min :: Expr, _expr :: Expr, _max :: Expr}
   | ClampScalar
@@ -576,15 +573,14 @@ instance PPrint Expr where
         pformatPrec 11 c,
         pformatPrec 11 p
       ]
-  pformatPrec n (TasoConv _ i w m c p) =
+  pformatPrec n (TasoConv _ i w m c) =
     prettyWithConstructor
       n
       "tasoConv"
       [ "inputs=" <> pformatPrec 11 i,
         "weights=" <> pformatPrec 11 w,
         pformatPrec 11 m,
-        pformatPrec 11 c,
-        pformatPrec 11 p
+        pformatPrec 11 c
       ]
   pformatPrec n (Clamp _ mi e ma) =
     prettyWithConstructor
@@ -646,7 +642,7 @@ identify i (URelabel e m) = Relabel i e m
 identify i (UDot l r c b) = Dot i l r c b
 identify i (UConvBase input w c) = ConvBase i input w c
 identify i (UConv input w c p) = Conv i input w c p
-identify i (UTasoConv input w m c p) = TasoConv i input w m c p
+identify i (UTasoConv input w m c) = TasoConv i input w m c
 identify i (UClamp mi e ma) = Clamp i mi e ma
 identify i (UClampScalar mi e ma) = ClampScalar i mi e ma
 identify i (UReverseTensor e a) = ReverseTensor i e a

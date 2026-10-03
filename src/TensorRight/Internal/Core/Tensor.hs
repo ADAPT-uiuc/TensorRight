@@ -594,14 +594,13 @@ tasoConv ::
   t2 ->
   TasoPaddingMode ->
   ConvConfigArgs ->
-  ConvPaddingArgs ->
   ErrorEnv Tensor
-tasoConv inputo weightso mode baseConfig paddingConfig = do
+tasoConv inputo weightso mode baseConfig = do
   input <- tensor inputo
   weights <- tensor weightso
   applyValBinary
-    (\i w -> Typed.tasoConv i w mode baseConfig paddingConfig)
-    (\i w -> Typed.tasoConv i w mode baseConfig paddingConfig)
+    (\i w -> Typed.tasoConv i w mode baseConfig)
+    (\i w -> Typed.tasoConv i w mode baseConfig)
     input
     weights
 
