@@ -33,6 +33,12 @@ cradle:
     - path: "./rules/taso/ewmul/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-ewmul"
 
+    - path: "./rules/taso/matmul2D/Main.hs"
+      component: "tensor-right:exe:rules-taso-matmul2D"
+
+    - path: "./rules/taso/matmul2D/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-matmul2D"
+
     - path: "./rules/taso/relu/Main.hs"
       component: "tensor-right:exe:rules-taso-relu"
 

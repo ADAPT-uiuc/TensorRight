@@ -141,6 +141,12 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  rules-taso-matmul2D:
+    source-dirs: rules/taso/matmul2D
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
   rules-xla-dyslice:
     source-dirs: rules/xla/dyslice
     main: Main.hs
