@@ -15,6 +15,30 @@ cradle:
     - path: "./rules/taso/enlarge/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-enlarge"
 
+    - path: "./rules/taso/ewadd/Main.hs"
+      component: "tensor-right:exe:rules-taso-ewadd"
+
+    - path: "./rules/taso/ewadd/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-ewadd"
+
+    - path: "./rules/taso/ewmul/Main.hs"
+      component: "tensor-right:exe:rules-taso-ewmul"
+
+    - path: "./rules/taso/ewmul/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-ewmul"
+
+    - path: "./rules/taso/relu/Main.hs"
+      component: "tensor-right:exe:rules-taso-relu"
+
+    - path: "./rules/taso/relu/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-relu"
+
+    - path: "./rules/taso/smul/Main.hs"
+      component: "tensor-right:exe:rules-taso-smul"
+
+    - path: "./rules/taso/smul/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-smul"
+
     - path: "./rules/xla/add/Main.hs"
       component: "tensor-right:exe:rules-xla-add"
 

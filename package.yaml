@@ -99,6 +99,30 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  rules-taso-ewadd:
+    source-dirs: rules/taso/ewadd
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-ewmul:
+    source-dirs: rules/taso/ewmul
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-smul:
+    source-dirs: rules/taso/smul
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
+  rules-taso-relu:
+    source-dirs: rules/taso/relu
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
   rules-xla-dyslice:
     source-dirs: rules/xla/dyslice
     main: Main.hs

@@ -1,19 +1,36 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module TensorRight.Internal.DSL.TASO
-  ( enlarge,
+  ( ewadd,
+    ewmul,
+    smul,
+    relu,
+    enlarge,
   )
 where
 
 import qualified Data.HashSet as HS
 import Data.Foldable (traverse_)
-import TensorRight.Internal.Core.Tensor (DType (IntType, RealType))
+import TensorRight.Internal.Core.Tensor
+  ( DType (IntType, RealType),
+    ToDType,
+    ToElem,
+  )
+import TensorRight.Internal.Core.Tensor.TensorInt (posInf)
 import TensorRight.Internal.DSL.DSL
-  ( DSLContext,
+  ( NumBinOp (Add, Mul),
+    DSLContext,
     Expr,
     ExprInContext,
+    ValidNum,
+    clampScalar,
     liftInContext,
+    numBinOp,
+    numBinScalarOp,
     rankPrecondition,
     shapeOf,
     typeOf,
@@ -28,6 +45,25 @@ import TensorRight.Internal.DSL.Shape
     getRClassByRClassRef,
   )
 import TensorRight.Internal.Util.Error (assert)
+
+-- | TASO's elementwise addition has exactly TensorRight's numeric
+-- elementwise-addition semantics.
+ewadd :: (ExprInContext lhs, ExprInContext rhs) => lhs -> rhs -> DSLContext Expr
+ewadd = numBinOp Add
+
+-- | TASO's elementwise multiplication has exactly TensorRight's numeric
+-- elementwise-multiplication semantics.
+ewmul :: (ExprInContext lhs, ExprInContext rhs) => lhs -> rhs -> DSLContext Expr
+ewmul = numBinOp Mul
+
+-- | TASO's scalar multiplication has exactly TensorRight's numeric
+-- tensor/scalar-multiplication semantics.
+smul :: (ExprInContext lhs, ToElem a, ToDType a) => lhs -> a -> DSLContext Expr
+smul = numBinScalarOp Mul
+
+-- | TASO's ReLU is a clamp from zero to positive infinity.
+relu :: forall a lhs. (ExprInContext lhs, ValidNum a) => lhs -> DSLContext Expr
+relu e = clampScalar @a 0 e posInf
 
 -- | TASO's rank-four enlarge operator. It centers @source@ in the H/W shape
 -- of @reference@. The frontend fixes the four abstract axes to singleton
