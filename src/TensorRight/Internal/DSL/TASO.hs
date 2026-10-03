@@ -11,6 +11,8 @@ module TensorRight.Internal.DSL.TASO
     smul,
     relu,
     concat,
+    split0,
+    split1,
     enlarge,
   )
 where
@@ -38,6 +40,8 @@ import TensorRight.Internal.DSL.DSL
     shapeOf,
     typeOf,
   )
+import Control.Monad.Except (MonadError (throwError))
+import qualified TensorRight.Internal.DSL.Expr as E
 import TensorRight.Internal.DSL.Expr
   ( UExpr (UEnlarge),
     internWithCheck,
@@ -79,6 +83,30 @@ concat ::
   rhs ->
   DSLContext Expr
 concat axis lhs rhs = concatTensor lhs rhs axis
+
+-- | The first output of TASO's paper-level split operator. This deliberately
+-- models only the split--concat axiom: its input must be a concat on @axis@,
+-- and it returns that concat's left operand. General split-tree provenance is
+-- outside the scope of this operator.
+split0 :: (ExprInContext e) => RClassRef -> e -> DSLContext Expr
+split0 axis expr' = do
+  expr <- liftInContext expr'
+  case expr of
+    E.Concat _ lhs _ concatAxis
+      | concatAxis == axis -> return lhs
+      | otherwise -> throwError "TASO split0: concat axis does not match split axis"
+    _ -> throwError "TASO split0: input must be a concat"
+
+-- | The second output of TASO's paper-level split operator. See 'split0' for
+-- the intentional direct-concat restriction.
+split1 :: (ExprInContext e) => RClassRef -> e -> DSLContext Expr
+split1 axis expr' = do
+  expr <- liftInContext expr'
+  case expr of
+    E.Concat _ _ rhs concatAxis
+      | concatAxis == axis -> return rhs
+      | otherwise -> throwError "TASO split1: concat axis does not match split axis"
+    _ -> throwError "TASO split1: input must be a concat"
 
 -- | TASO's rank-four enlarge operator. It centers @source@ in the H/W shape
 -- of @reference@. The frontend fixes the four abstract axes to singleton

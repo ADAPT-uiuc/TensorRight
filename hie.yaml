@@ -45,6 +45,12 @@ cradle:
     - path: "./rules/taso/smul/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-taso-smul"
 
+    - path: "./rules/taso/split/Main.hs"
+      component: "tensor-right:exe:rules-taso-split"
+
+    - path: "./rules/taso/split/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-split"
+
     - path: "./rules/xla/add/Main.hs"
       component: "tensor-right:exe:rules-xla-add"
 

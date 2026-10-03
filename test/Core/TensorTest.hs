@@ -1447,6 +1447,45 @@ tensorTest =
                   _ -> assertFailure "expected an Enlarge expression"
                 null (preConditions env) @?= True
                 map (`HM.lookup` rankConditions env) rclasses @?= replicate 4 (Just 1),
+          testCase "TASO split returns the selected direct concat operand" $ do
+            let result = runDSLContext $ do
+                  axis <- newRClass "axis"
+                  other <- newRClass "other"
+                  lhsSize <- newMap "lhs-size" axis
+                  rhsSize <- newMap "rhs-size" axis
+                  otherSize <- newMap "other-size" other
+                  lhs <- newTensor @TensorInt "lhs" [axis --> lhsSize, other --> otherSize]
+                  rhs <- newTensor @TensorInt "rhs" [axis --> rhsSize, other --> otherSize]
+                  joined <- TASO.concat (ByRClass axis) lhs rhs
+                  first <- TASO.split0 (ByRClass axis) joined
+                  second <- TASO.split1 (ByRClass axis) joined
+                  pure (lhs, rhs, first, second)
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((lhs, rhs, first, second), _) -> do
+                exprId first @?= exprId lhs
+                exprId second @?= exprId rhs,
+          testCase "TASO split rejects non-concat inputs and mismatched axes" $ do
+            let nonConcat = runDSLContext $ do
+                  axis <- newRClass "axis"
+                  size <- newMap "size" axis
+                  input <- newTensor @TensorInt "input" [axis --> size]
+                  TASO.split0 (ByRClass axis) input
+            let mismatchedAxis = runDSLContext $ do
+                  axis <- newRClass "axis"
+                  other <- newRClass "other"
+                  axisSize <- newMap "axis-size" axis
+                  otherSize <- newMap "other-size" other
+                  lhs <- newTensor @TensorInt "lhs" [axis --> axisSize, other --> otherSize]
+                  rhs <- newTensor @TensorInt "rhs" [axis --> axisSize, other --> otherSize]
+                  joined <- TASO.concat (ByRClass axis) lhs rhs
+                  TASO.split0 (ByRClass other) joined
+            case nonConcat of
+              Left _ -> pure ()
+              Right _ -> assertFailure "split should reject a non-concat input"
+            case mismatchedAxis of
+              Left _ -> pure ()
+              Right _ -> assertFailure "split should reject a mismatched axis",
           testCase "iota and concat require a rank-one axis" $ do
             let iotaResult = runDSLContext $ do
                   rclass <- newRClass "rclass"
