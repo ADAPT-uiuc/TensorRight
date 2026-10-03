@@ -40,6 +40,7 @@ module TensorRight.Internal.Core.Tensor.Typed
     sliceStartEndStrides,
     pad,
     padLow,
+    enlarge,
     constant,
     relabel,
     transpose,
@@ -780,6 +781,41 @@ padLow to v lowPadding = do
             (tensorAccess t originalIndices)
       )
       paddedShape
+
+-- | TASO's enlarge operator. It pads selected axes to at least their requested
+-- sizes, splitting extra padding with the lower side receiving the floor half.
+enlarge ::
+  (TensorOperand t elem, Num elem) =>
+  t ->
+  Sizes ->
+  Sizes ->
+  ErrorEnv (Tensor elem)
+enlarge to targetSizes lowPadding = do
+  t <- tensor to
+  let axes = tensorAllAxes t
+      targetAxes = allAxes targetSizes
+  assert "enlarge: target axes must be a subset of the tensor axes" $
+    targetAxes `HS.isSubsetOf` axes
+  assert "enlarge: lower-padding axes must equal target axes" $
+    allAxes lowPadding == targetAxes
+  assert "enlarge: target sizes must be non-negative" $
+    symAll (.>= 0) $ asHashMap targetSizes
+  let originalSizes = restrictAxes targetAxes $ tensorShape t
+      extraPadding = mapAxisMap (symMax 0) $ subAxisMap targetSizes originalSizes
+  assert "enlarge: lower padding must be floor(extra padding / 2)" $
+    zipFoldAxisMap
+      (\low extra -> (low + low) .<= extra .&& extra .<= (low + low + 1))
+      (con True)
+      (.&&)
+      lowPadding
+      extraPadding
+  let highPadding = subAxisMap extraPadding lowPadding
+  pad t 0 $
+    PaddingArgs
+      { lowPad = lowPadding,
+        interiorPad = mempty,
+        highPad = highPadding
+      }
 
 relabel ::
   (TensorOperand t elem) =>

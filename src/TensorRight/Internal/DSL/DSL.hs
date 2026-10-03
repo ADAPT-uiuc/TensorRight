@@ -49,6 +49,7 @@ module TensorRight.Internal.DSL.DSL
     slice,
     pad,
     padLow,
+    enlarge,
     relabel,
     dynamicSlice,
     dynamicUpdateSlice,
@@ -148,6 +149,7 @@ import TensorRight.Internal.DSL.Expr
         UDot,
         UDynamicSlice,
         UDynamicUpdateSlice,
+        UEnlarge,
         UIota,
         UNumBinOp,
         UNumScalarBinOp,
@@ -844,6 +846,28 @@ padLow expr' elem low = do
     let ety = toDType elem
     assert "Element must have the same type as the tensor" $ ty == ety
     checkParamsWellFormed shape l
+    return (shape, ty)
+
+-- | TASO's enlarge operation. The backend enforces the target-size and
+-- deterministic lower-padding constraints during symbolic evaluation.
+enlarge ::
+  (ExprInContext e) =>
+  e ->
+  [(RClassRef, SymInteger)] ->
+  [ParamDesc] ->
+  DSLContext Expr
+enlarge expr' targetSizes lowPadding = do
+  expr <- liftInContext expr'
+  let lows = toParamMaps lowPadding
+  internWithCheck (UEnlarge expr targetSizes lows) $ do
+    shape <- shapeOf expr
+    ty <- typeOf expr
+    assert "enlarge: tensor must have integer or real type" $
+      ty `elem` [IntType, RealType]
+    assert "enlarge: lower-padding rclasses must equal target-size rclasses" $
+      HM.keysSet lows == HS.fromList (fst <$> targetSizes)
+    mapM_ (getRClassByRClassRef shape . fst) targetSizes
+    checkParamsWellFormed shape lows
     return (shape, ty)
 
 -- | Named arguments to the 'convBase' and 'conv' operation.

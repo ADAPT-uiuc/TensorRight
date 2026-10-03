@@ -35,6 +35,7 @@ module TensorRight.Internal.Core.Tensor
     slice,
     pad,
     padLow,
+    enlarge,
     relabel,
     transpose,
     concatTensor,
@@ -460,6 +461,19 @@ padLow ::
 padLow to elem lowPadConfig = do
   t <- tensor to
   genericApplyUnaryWithElem (\t e -> Typed.padLow t e lowPadConfig) t elem
+
+enlarge ::
+  (TensorOperand t) =>
+  t ->
+  Sizes ->
+  Sizes ->
+  ErrorEnv Tensor
+enlarge to targetSizes lowPadding = do
+  t <- tensor to
+  case t of
+    RealTensor t' -> mrgFmap RealTensor $ Typed.enlarge t' targetSizes lowPadding
+    IntTensor t' -> mrgFmap IntTensor $ Typed.enlarge t' targetSizes lowPadding
+    BoolTensor _ -> mrgThrowError "enlarge: only valid for IntTensors and RealTensors"
 
 relabel :: (TensorOperand t) => t -> HM.HashMap Axis Axis -> ErrorEnv Tensor
 relabel to permutation =

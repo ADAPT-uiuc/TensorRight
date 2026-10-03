@@ -55,6 +55,7 @@ import TensorRight.Internal.Core.Tensor.Typed
     createTensor,
     dynamicSlice,
     dynamicUpdateSlice,
+    enlarge,
     indicesInRange,
     iota,
     numBinOp,
@@ -77,7 +78,11 @@ import TensorRight.Internal.DSL.DSL
     runDSLContext,
   )
 import qualified TensorRight.Internal.DSL.DSL as DSL
-import TensorRight.Internal.DSL.Expr (Env (exprDTypes, rankConditions), exprId)
+import TensorRight.Internal.DSL.Expr
+  ( Env (exprDTypes, preConditions, rankConditions),
+    Expr (Enlarge),
+    exprId,
+  )
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import TensorRight.Internal.Util.Error (ErrorEnv)
 import Test.Framework (Test, testGroup)
@@ -926,6 +931,53 @@ tensorTest =
                 expected = Just $ TensorElemVal "xa2b1c2"
               }
           ],
+      testGroup "enlarge" $ do
+        let x = simpleTensor @SymInteger "x" [("a", 3), ("b", 2)]
+        [ toTensorTest "pads to the requested size with a floor split" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", 6)])
+                    (fromKVPairs [(Axis "a", 1)]),
+                shape = Just $ fromKVPairs [(Axis "a", 6), (Axis "b", 2)],
+                access = Just $ fromKVPairs [(Axis "a", 0), (Axis "b", 1)],
+                expected = Just $ TensorElemVal 0
+              },
+          toTensorTest "does not shrink dimensions above the target" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", 2)])
+                    (fromKVPairs [(Axis "a", 0)]),
+                shape = Just $ fromKVPairs [(Axis "a", 3), (Axis "b", 2)],
+                access = Just $ fromKVPairs [(Axis "a", 2), (Axis "b", 1)],
+                expected = Just $ TensorElemVal "xa2b1"
+              },
+          toTensorTest "rejects a non-floor lower-padding split" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", 6)])
+                    (fromKVPairs [(Axis "a", 0)]),
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              },
+          toTensorTest "rejects a negative target size" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", -1)])
+                    (fromKVPairs [(Axis "a", 0)]),
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              }
+          ],
       testGroup "transpose" $ do
         let axisa = Axis "a"
         let axisb = Axis "b"
@@ -1343,6 +1395,20 @@ tensorTest =
             case conflictingRanks of
               Left _ -> pure ()
               Right _ -> assertFailure "conflicting ranks should be rejected",
+          testCase "enlarge is a backend-asserted expression" $ do
+            let result = runDSLContext $ do
+                  rclass <- newRClass "rclass"
+                  size <- newMap "size" rclass
+                  low <- newMap "low" rclass
+                  input <- newTensor @TensorInt "input" [rclass --> size]
+                  DSL.enlarge input [(ByRClass rclass, ssym "target")] [rclass --> low]
+            case result of
+              Left err -> assertFailure $ show err
+              Right (expr, env) -> do
+                case expr of
+                  Enlarge {} -> pure ()
+                  _ -> assertFailure "expected an Enlarge expression"
+                null (preConditions env) @?= True,
           testCase "iota and concat require a rank-one axis" $ do
             let iotaResult = runDSLContext $ do
                   rclass <- newRClass "rclass"
