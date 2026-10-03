@@ -13,6 +13,7 @@ module TensorRight.Internal.DSL.TASO
     concat,
     split0,
     split1,
+    transpose,
     enlarge,
   )
 where
@@ -37,6 +38,7 @@ import TensorRight.Internal.DSL.DSL
     numBinOp,
     numBinScalarOp,
     rankPrecondition,
+    relabel,
     shapeOf,
     typeOf,
   )
@@ -52,6 +54,7 @@ import TensorRight.Internal.DSL.Shape
     getRClassByRClassRef,
   )
 import TensorRight.Internal.Util.Error (assert)
+import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import Prelude hiding (concat)
 
 -- | TASO's elementwise addition has exactly TensorRight's numeric
@@ -107,6 +110,21 @@ split1 axis expr' = do
       | concatAxis == axis -> return rhs
       | otherwise -> throwError "TASO split1: concat axis does not match split axis"
     _ -> throwError "TASO split1: input must be a concat"
+
+-- | TASO's rule-level transpose. Although TASO's graph API also exposes
+-- arbitrary-rank permutations, its published rewrite axioms use only the
+-- matrix transpose: a rank-two swap. Each abstract axis is therefore fixed
+-- to one concrete axis before desugaring to TensorRight's general relabel.
+transpose :: (ExprInContext e) => e -> DSLContext Expr
+transpose expr' = do
+  expr <- liftInContext expr'
+  shape <- shapeOf expr
+  let refs = HS.toList $ abstractShapeAllRefs shape
+  assert "tasoTranspose: input must have exactly two axes" $ length refs == 2
+  rclasses <- traverse (getRClassByRClassRef shape) refs
+  traverse_ (`rankPrecondition` 1) rclasses
+  let [first, second] = refs
+  relabel expr [first --> second, second --> first]
 
 -- | TASO's rank-four enlarge operator. It centers @source@ in the H/W shape
 -- of @reference@. The frontend fixes the four abstract axes to singleton

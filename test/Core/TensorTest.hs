@@ -84,7 +84,7 @@ import TensorRight.Internal.DSL.Expr
     Expr (Enlarge),
     exprId,
   )
-import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
+import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)), AtSyntax ((@@)))
 import qualified TensorRight.Internal.DSL.TASO as TASO
 import TensorRight.Internal.Util.Error (ErrorEnv)
 import Test.Framework (Test, testGroup)
@@ -1486,6 +1486,29 @@ tensorTest =
             case mismatchedAxis of
               Left _ -> pure ()
               Right _ -> assertFailure "split should reject a mismatched axis",
+          testCase "TASO transpose swaps exactly two singleton axes" $ do
+            let result = runDSLContext $ do
+                  axes <- newRClass "axes"
+                  rows <- newMap "rows" axes
+                  columns <- newMap "columns" axes
+                  input <- newTensor @TensorInt "input" [axes --> rows @@ "row", axes --> columns @@ "column"]
+                  output <- TASO.transpose input
+                  pure (output, axes)
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((_, axes), env) ->
+                HM.lookup axes (rankConditions env) @?= Just 1,
+          testCase "TASO transpose rejects tensors other than rank two" $ do
+            let result = runDSLContext $ do
+                  axes <- newRClass "axes"
+                  firstSize <- newMap "first-size" axes
+                  secondSize <- newMap "second-size" axes
+                  thirdSize <- newMap "third-size" axes
+                  input <- newTensor @TensorInt "input" [axes --> firstSize @@ "first", axes --> secondSize @@ "second", axes --> thirdSize @@ "third"]
+                  TASO.transpose input
+            case result of
+              Left _ -> pure ()
+              Right _ -> assertFailure "transpose should reject a non-rank-two tensor",
           testCase "iota and concat require a rank-one axis" $ do
             let iotaResult = runDSLContext $ do
                   rclass <- newRClass "rclass"
