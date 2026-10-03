@@ -36,6 +36,7 @@ module TensorRight.Internal.Core.Tensor
     pad,
     padLow,
     enlarge,
+    tasoEnlarge,
     relabel,
     transpose,
     concatTensor,
@@ -474,6 +475,19 @@ enlarge to targetSizes lowPadding = do
     RealTensor t' -> mrgFmap RealTensor $ Typed.enlarge t' targetSizes lowPadding
     IntTensor t' -> mrgFmap IntTensor $ Typed.enlarge t' targetSizes lowPadding
     BoolTensor _ -> mrgThrowError "enlarge: only valid for IntTensors and RealTensors"
+
+tasoEnlarge ::
+  (TensorOperand source, TensorOperand reference) =>
+  source -> reference -> Axes -> ErrorEnv Tensor
+tasoEnlarge source reference spatialAxes = do
+  source' <- tensor source
+  reference' <- tensor reference
+  if tensorDType source' /= tensorDType reference'
+    then mrgThrowError "tasoEnlarge: source and reference must have the same type"
+    else case source' of
+      RealTensor t -> mrgFmap RealTensor $ Typed.tasoEnlarge t (tensorShape reference') spatialAxes
+      IntTensor t -> mrgFmap IntTensor $ Typed.tasoEnlarge t (tensorShape reference') spatialAxes
+      BoolTensor _ -> mrgThrowError "tasoEnlarge: only valid for IntTensors and RealTensors"
 
 relabel :: (TensorOperand t) => t -> HM.HashMap Axis Axis -> ErrorEnv Tensor
 relabel to permutation =

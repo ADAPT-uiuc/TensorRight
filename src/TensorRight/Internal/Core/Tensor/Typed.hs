@@ -41,6 +41,7 @@ module TensorRight.Internal.Core.Tensor.Typed
     pad,
     padLow,
     enlarge,
+    tasoEnlarge,
     constant,
     relabel,
     transpose,
@@ -816,6 +817,33 @@ enlarge to targetSizes lowPadding = do
         interiorPad = mempty,
         highPad = highPadding
       }
+
+-- | TASO's rank-four enlarge operator. The reference contributes only its
+-- spatial sizes; source values are centered with zero padding.
+tasoEnlarge ::
+  (TensorOperand t elem, Num elem) =>
+  t ->
+  Sizes ->
+  Axes ->
+  ErrorEnv (Tensor elem)
+tasoEnlarge to referenceShape spatialAxes = do
+  t <- tensor to
+  let sourceAxes = tensorAllAxes t
+  assert "tasoEnlarge: source must be rank 4" $ HS.size sourceAxes == 4
+  assert "tasoEnlarge: reference must be rank 4" $ HS.size (allAxes referenceShape) == 4
+  assert "tasoEnlarge: expected exactly two spatial axes" $ HS.size spatialAxes == 2
+  assert "tasoEnlarge: spatial axes must be source axes" $
+    spatialAxes `HS.isSubsetOf` sourceAxes
+  assert "tasoEnlarge: reference axes must equal source axes" $
+    allAxes referenceShape == sourceAxes
+  let sourceSpatial = restrictAxes spatialAxes $ tensorShape t
+      referenceSpatial = restrictAxes spatialAxes referenceShape
+      extra = subAxisMap referenceSpatial sourceSpatial
+  assert "tasoEnlarge: source spatial sizes must not exceed reference sizes" $
+    symAll (.>= 0) $ asHashMap extra
+  low <- safeDivAxisMap extra $ mapAxisMap (const 2) extra
+  let high = subAxisMap extra low
+  pad t 0 $ PaddingArgs {lowPad = low, interiorPad = mempty, highPad = high}
 
 relabel ::
   (TensorOperand t elem) =>

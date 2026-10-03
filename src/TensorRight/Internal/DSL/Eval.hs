@@ -72,6 +72,7 @@ import TensorRight.Internal.Core.Tensor
     dynamicSlice,
     dynamicUpdateSlice,
     enlarge,
+    tasoEnlarge,
     iota,
     numBinOp,
     numScalarBinOp,
@@ -395,20 +396,12 @@ eval' (PadLow _ expr elem lowPadding) = do
   e <- eval expr
   l <- getSizesFromParams lowPadding
   return $ padLow e elem l
-eval' (Enlarge _ expr targetSizes lowPadding) = do
+eval' (Enlarge _ expr reference spatialAxes) = do
   e <- eval expr
+  r <- eval reference
   shape <- exprShape expr
-  targets <-
-    fmap mconcat $
-      traverse
-        (\(ref, size) -> do
-          rclass <- getRClassByRClassRef shape ref
-          axes <- getAxes ref rclass
-          return $ fromHashMap $ HM.fromList [(axis, size) | axis <- HS.toList axes]
-        )
-        targetSizes
-  lows <- getSizesFromParams lowPadding
-  return $ enlarge e targets lows
+  axes <- rclassesToAxes shape spatialAxes
+  return $ tasoEnlarge e r axes
 eval' (DynamicSlice _ expr DySliceArgsExpr {..}) = do
   e <- eval expr
   start <- getIndicesFromParams start

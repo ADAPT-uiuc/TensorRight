@@ -6,52 +6,59 @@ module TensorRight.Internal.DSL.TASO
   )
 where
 
-import Grisette (SymInteger)
-import qualified Data.HashMap.Lazy as HM
 import qualified Data.HashSet as HS
+import Data.Foldable (traverse_)
 import TensorRight.Internal.Core.Tensor (DType (IntType, RealType))
 import TensorRight.Internal.DSL.DSL
   ( DSLContext,
     Expr,
     ExprInContext,
     liftInContext,
+    rankPrecondition,
     shapeOf,
     typeOf,
   )
 import TensorRight.Internal.DSL.Expr
   ( UExpr (UEnlarge),
-    checkParamsWellFormed,
     internWithCheck,
   )
-import TensorRight.Internal.DSL.Identifier (MapIdentifier)
-import TensorRight.Internal.DSL.Parameters (IsParamMaps (toParamMaps), ParamDesc (ParamDesc))
-import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
+import TensorRight.Internal.DSL.Shape
+  ( RClassRef,
+    abstractShapeAllRefs,
+    getRClassByRClassRef,
+  )
 import TensorRight.Internal.Util.Error (assert)
 
--- | TASO's enlarge operator. The backend asserts non-negative target sizes and
--- the deterministic floor split of the additional padding.
+-- | TASO's rank-four enlarge operator. It centers @source@ in the H/W shape
+-- of @reference@. The frontend fixes the four abstract axes to singleton
+-- rclasses; Core asserts the resulting concrete rank and size constraints.
 enlarge ::
-  (ExprInContext e) =>
-  ParamDesc ->
-  ParamDesc ->
-  MapIdentifier ->
-  MapIdentifier ->
-  SymInteger ->
-  SymInteger ->
-  e ->
+  (ExprInContext source, ExprInContext reference) =>
+  RClassRef ->
+  RClassRef ->
+  source ->
+  reference ->
   DSLContext Expr
-enlarge h@(ParamDesc hRef _) w@(ParamDesc wRef _) hLow wLow ky kx e' = do
-  e <- liftInContext e'
-  let targetSizes = [(hRef, ky), (wRef, kx)]
-      targetMaps = toParamMaps [h, w]
-      lowPadding = toParamMaps ([hRef --> hLow, wRef --> wLow] :: [ParamDesc])
-  internWithCheck (UEnlarge e targetSizes lowPadding) $ do
-    shape <- shapeOf e
-    dtype <- typeOf e
-    assert "enlarge: tensor must have integer or real type" $
-      dtype `elem` [IntType, RealType]
-    assert "enlarge: lower-padding rclasses must equal target-size rclasses" $
-      HM.keysSet lowPadding == HS.fromList (fst <$> targetSizes)
-    checkParamsWellFormed shape targetMaps
-    checkParamsWellFormed shape lowPadding
-    return (shape, dtype)
+enlarge h w source' reference' = do
+  source <- liftInContext source'
+  reference <- liftInContext reference'
+  internWithCheck (UEnlarge source reference [h, w]) $ do
+    sourceShape <- shapeOf source
+    referenceShape <- shapeOf reference
+    sourceType <- typeOf source
+    referenceType <- typeOf reference
+    assert "tasoEnlarge: source must have integer or real type" $
+      sourceType `elem` [IntType, RealType]
+    assert "tasoEnlarge: source and reference must have the same axes" $
+      sourceShape == referenceShape
+    assert "tasoEnlarge: source and reference must have the same type" $
+      sourceType == referenceType
+    let sourceRefs = abstractShapeAllRefs sourceShape
+    assert "tasoEnlarge: source must have exactly four axes" $
+      HS.size sourceRefs == 4
+    sourceRClasses <- traverse (getRClassByRClassRef sourceShape) $ HS.toList sourceRefs
+    traverse_ (`rankPrecondition` 1) sourceRClasses
+    assert "tasoEnlarge: spatial axes must be distinct source axes" $
+      HS.fromList [h, w] `HS.isSubsetOf` sourceRefs
+        && h /= w
+    return (sourceShape, sourceType)

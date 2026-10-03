@@ -63,6 +63,7 @@ import TensorRight.Internal.Core.Tensor.Typed
     padLow,
     reduce,
     sliceStartEndStrides,
+    tasoEnlarge,
     tensorAccess,
     transpose,
   )
@@ -979,6 +980,32 @@ tensorTest =
                 expected = Nothing
               }
           ],
+      testGroup "tasoEnlarge" $ do
+        let x = simpleTensor @SymInteger "x" [("n", 1), ("c", 1), ("h", 2), ("w", 2)]
+        let referenceShape = fromKVPairs [(Axis "n", 1), (Axis "c", 1), (Axis "h", 5), (Axis "w", 4)]
+        let spatialAxes = HS.fromList [Axis "h", Axis "w"]
+        [ toTensorTest "centers the source using floor lower padding" $
+            TensorTest
+              { tensor = tasoEnlarge x referenceShape spatialAxes,
+                shape = Just referenceShape,
+                access = Just $ fromKVPairs [(Axis "n", 0), (Axis "c", 0), (Axis "h", 1), (Axis "w", 1)],
+                expected = Just $ TensorElemVal "xn0c0h0w0"
+              },
+          toTensorTest "rejects shrinking a spatial dimension" $
+            TensorTest
+              { tensor = tasoEnlarge x (fromKVPairs [(Axis "n", 1), (Axis "c", 1), (Axis "h", 1), (Axis "w", 2)]) spatialAxes,
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              },
+          toTensorTest "rejects non-rank-four tensors" $
+            TensorTest
+              { tensor = tasoEnlarge (simpleTensor @SymInteger "y" [("h", 2), ("w", 2)]) (fromKVPairs [(Axis "h", 3), (Axis "w", 3)]) spatialAxes,
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              }
+          ],
       testGroup "transpose" $ do
         let axisa = Axis "a"
         let axisb = Axis "b"
@@ -1396,30 +1423,30 @@ tensorTest =
             case conflictingRanks of
               Left _ -> pure ()
               Right _ -> assertFailure "conflicting ranks should be rejected",
-          testCase "TASO enlarge adds no frontend preconditions" $ do
+          testCase "TASO enlarge fixes four singleton axes without semantic preconditions" $ do
             let result = runDSLContext $ do
+                  n <- newRClass "batch"
+                  c <- newRClass "channel"
                   h <- newRClass "height"
                   w <- newRClass "width"
+                  nSize <- newMap "batch-size" n
+                  cSize <- newMap "channel-size" c
                   hSize <- newMap "height-size" h
                   wSize <- newMap "width-size" w
-                  hLow <- newMap "height-low" h
-                  wLow <- newMap "width-low" w
-                  input <- newTensor @TensorInt "input" [h --> hSize, w --> wSize]
-                  TASO.enlarge
-                    (ByRClass h --> hSize)
-                    (ByRClass w --> wSize)
-                    hLow
-                    wLow
-                    (ssym "target-height")
-                    (ssym "target-width")
-                    input
+                  targetH <- newMap "target-height" h
+                  targetW <- newMap "target-width" w
+                  input <- newTensor @TensorInt "input" [n --> nSize, c --> cSize, h --> hSize, w --> wSize]
+                  reference <- newTensor @TensorInt "reference" [n --> nSize, c --> cSize, h --> targetH, w --> targetW]
+                  expr <- TASO.enlarge (ByRClass h) (ByRClass w) input reference
+                  pure (expr, [n, c, h, w])
             case result of
               Left err -> assertFailure $ show err
-              Right (expr, env) -> do
+              Right ((expr, rclasses), env) -> do
                 case expr of
                   Enlarge {} -> pure ()
                   _ -> assertFailure "expected an Enlarge expression"
-                null (preConditions env) @?= True,
+                null (preConditions env) @?= True
+                map (`HM.lookup` rankConditions env) rclasses @?= replicate 4 (Just 1),
           testCase "iota and concat require a rank-one axis" $ do
             let iotaResult = runDSLContext $ do
                   rclass <- newRClass "rclass"
