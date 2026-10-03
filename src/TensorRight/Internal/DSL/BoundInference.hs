@@ -262,13 +262,20 @@ inferBound
             .&& rhsTensorIsValid
             .&& lhsAccessIsValid
             .&& rhsAccessIsValid
+    let mentionsNonFixedRClass term =
+          any (\rclass -> hasRClass st rclass term) $ HS.toList nonFixedRClasses
     let allConditions =
-          getAllConditions st $
-            SomeTerm $
-              underlyingTerm equivalent
+          HS.filter mentionsNonFixedRClass $
+            getAllConditions st $
+              SomeTerm $
+                underlyingTerm equivalent
     filteredConditions <-
       filterPairs (conditionEquivalent solverConfig allPreCond) allConditions
-    let allAccesses = getAllAccesses st $ SomeTerm $ underlyingTerm equivalent
+    let allAccesses =
+          HS.filter mentionsNonFixedRClass $
+            getAllAccesses st $
+              SomeTerm $
+                underlyingTerm equivalent
     filteredAccesses <- filterPairs (accessEquivalent solverConfig allPreCond) allAccesses
     putStrLn $ "# all conditions: " <> show (HS.size allConditions)
     putStrLn $ "# all accesses: " <> show (HS.size allAccesses)
