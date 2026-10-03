@@ -68,13 +68,16 @@ import TensorRight.Internal.Core.Tensor.Typed
 import TensorRight.Internal.DSL.DSL
   ( DType (RealType),
     NumBinOp (Mul),
+    RClassRef (ByRClass),
     newMap,
     newRClass,
     newTensor,
     numBinScalarOp,
+    rankPrecondition,
     runDSLContext,
   )
-import TensorRight.Internal.DSL.Expr (Env (exprDTypes), exprId)
+import qualified TensorRight.Internal.DSL.DSL as DSL
+import TensorRight.Internal.DSL.Expr (Env (exprDTypes, rankConditions), exprId)
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import TensorRight.Internal.Util.Error (ErrorEnv)
 import Test.Framework (Test, testGroup)
@@ -1316,6 +1319,48 @@ tensorTest =
             case result of
               Left err -> assertFailure $ show err
               Right (expr, env) ->
-                HM.lookup (exprId expr) (exprDTypes env) @?= Just RealType
+                HM.lookup (exprId expr) (exprDTypes env) @?= Just RealType,
+          testCase "rankPrecondition records an exact rank" $ do
+            let result = runDSLContext $ do
+                  rclass <- newRClass "rclass"
+                  rankPrecondition rclass 3
+                  pure rclass
+            case result of
+              Left err -> assertFailure $ show err
+              Right (rclass, env) ->
+                HM.lookup rclass (rankConditions env) @?= Just 3,
+          testCase "rankPrecondition rejects invalid and conflicting ranks" $ do
+            let invalidRank = runDSLContext $ do
+                  rclass <- newRClass "rclass"
+                  rankPrecondition rclass 0
+            let conflictingRanks = runDSLContext $ do
+                  rclass <- newRClass "rclass"
+                  rankPrecondition rclass 2
+                  rankPrecondition rclass 3
+            case invalidRank of
+              Left _ -> pure ()
+              Right _ -> assertFailure "rank 0 should be rejected"
+            case conflictingRanks of
+              Left _ -> pure ()
+              Right _ -> assertFailure "conflicting ranks should be rejected",
+          testCase "iota and concat require a rank-one axis" $ do
+            let iotaResult = runDSLContext $ do
+                  rclass <- newRClass "rclass"
+                  size <- newMap "size" rclass
+                  _ <- DSL.iota [rclass --> size] (ByRClass rclass)
+                  pure rclass
+            let concatResult = runDSLContext $ do
+                  rclass <- newRClass "rclass"
+                  size <- newMap "size" rclass
+                  lhs <- newTensor @TensorInt "lhs" [rclass --> size]
+                  rhs <- newTensor @TensorInt "rhs" [rclass --> size]
+                  _ <- DSL.concatTensor lhs rhs (ByRClass rclass)
+                  pure rclass
+            let assertRankOne result = case result of
+                  Left err -> assertFailure $ show err
+                  Right (rclass, env) ->
+                    HM.lookup rclass (rankConditions env) @?= Just 1
+            assertRankOne iotaResult
+            assertRankOne concatResult
         ]
     ]

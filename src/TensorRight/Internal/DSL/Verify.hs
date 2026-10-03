@@ -57,8 +57,8 @@ import TensorRight.Internal.DSL.DSL
         lhsSIMaps,
         numTensorAssumptions,
         preConditions,
+        rankConditions,
         rhsSIMaps,
-        singletonRClasses,
         tensorShapes
       ),
     ValidElem,
@@ -210,6 +210,8 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
                 else mempty
           )
           maps
+  let fixedRClasses = HM.keysSet rankConditions
+  let nonFixedRClasses = declaredRClasses `HS.difference` fixedRClasses
   return
     ( VerifyTask
         solverConfig
@@ -226,8 +228,8 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
         otherSISymbols
         monitoringTensors
         monitoringSizes,
-      declaredRClasses `HS.difference` singletonRClasses,
-      singletonRClasses,
+      nonFixedRClasses,
+      fixedRClasses,
       exprAbstractShapes HM.! exprId (lhs rewrite)
     )
 
@@ -302,14 +304,14 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
     Right (rewrite, env) -> do
       putStrLn $ "Verifying rule " <> T.unpack (name rewrite)
       let bound0 = baseRClassBound0 rewrite env
-      (task, nonSingletonRClasses, singletonRClasses, shape) <-
+      (task, nonFixedRClasses, _, shape) <-
         verifyDSLWithNDim solverConfig rewrite env bound0
       inferredBound <-
         inferBound
           solverConfig
           task
-          nonSingletonRClasses
-          singletonRClasses
+          nonFixedRClasses
+          (rankConditions env)
           shape
       putStrLn $ "Inferred bounds: " <> show inferredBound
       putStrLn $
@@ -321,19 +323,19 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
         "[INFO"
           <> maybe "" ("-" <>) theoryInfo
           <> "]: Number of bounded verification tasks: "
-          <> show (product inferredBound)
+          <> show (product $ fmap (\(lower, upper) -> upper - lower + 1) inferredBound)
       let ndims = allNdims $ HM.toList inferredBound
       let fst4 (a, _, _, _) = a
       traverse_
         (verifyDSLWithNDim solverConfig rewrite env >=> verifyRule . fst4)
         ndims
   where
-    allNdims :: [(RClassIdentifier, Int)] -> [HM.HashMap RClassIdentifier Int]
+    allNdims :: [(RClassIdentifier, (Int, Int))] -> [HM.HashMap RClassIdentifier Int]
     allNdims inferredBoundList =
       HM.fromList
         <$> traverse
-          ( \(rclassIdent, bound) ->
-              [(rclassIdent, i) | i <- [1 .. bound]]
+          ( \(rclassIdent, (lower, upper)) ->
+              [(rclassIdent, i) | i <- [lower .. upper]]
           )
           inferredBoundList
 
