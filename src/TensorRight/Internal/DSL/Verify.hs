@@ -210,8 +210,8 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
                 else mempty
           )
           maps
-  let singletonRClasses = HS.fromList [rclass | (rclass, rank) <- HM.toList rankConditions, rank == 1]
-  let nonSingletonRClasses = declaredRClasses `HS.difference` singletonRClasses
+  let fixedRClasses = HM.keysSet rankConditions
+  let nonFixedRClasses = declaredRClasses `HS.difference` fixedRClasses
   return
     ( VerifyTask
         solverConfig
@@ -228,8 +228,8 @@ verifyDSLWithNDim solverConfig rewrite Env {..} ndim = do
         otherSISymbols
         monitoringTensors
         monitoringSizes,
-      nonSingletonRClasses,
-      singletonRClasses,
+      nonFixedRClasses,
+      fixedRClasses,
       exprAbstractShapes HM.! exprId (lhs rewrite)
     )
 
@@ -304,12 +304,13 @@ verifyDSLWithImpl solverConfig theoryInfo rewrite = do
     Right (rewrite, env) -> do
       putStrLn $ "Verifying rule " <> T.unpack (name rewrite)
       let bound0 = baseRClassBound0 rewrite env
-      (task, _nonSingletonRClasses, _singletonRClasses, shape) <-
+      (task, nonFixedRClasses, _, shape) <-
         verifyDSLWithNDim solverConfig rewrite env bound0
       inferredBound <-
         inferBound
           solverConfig
           task
+          nonFixedRClasses
           (rankConditions env)
           shape
       putStrLn $ "Inferred bounds: " <> show inferredBound
