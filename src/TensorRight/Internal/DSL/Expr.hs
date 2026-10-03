@@ -18,6 +18,7 @@ module TensorRight.Internal.DSL.Expr
     PaddingArgsExpr (..),
     ConvConfigArgsExpr (..),
     ConvPaddingArgsExpr (..),
+    TasoPaddingMode (..),
     SliceArgsExpr (..),
     DySliceArgsExpr (..),
     UExpr (..),
@@ -120,6 +121,12 @@ data ConvPaddingArgsExpr = ConvPaddingArgsExpr
   deriving (Hashable)
   deriving (PPrint) via (Default ConvPaddingArgsExpr)
 
+-- | Padding modes in TASO's Conv2D operator.
+data TasoPaddingMode = Same | Valid
+  deriving (Generic, Eq, Show)
+  deriving (Hashable)
+  deriving (PPrint) via (Default TasoPaddingMode)
+
 data SliceArgsExpr = SliceArgsExpr
   { start :: Params,
     end :: Params,
@@ -212,6 +219,13 @@ data ExprDescription
         _convConfig :: ConvConfigArgsExpr,
         _convPadding :: ConvPaddingArgsExpr
       }
+  | TasoConvDescription
+      { _input :: Int,
+        _weight :: Int,
+        _tasoPaddingMode :: TasoPaddingMode,
+        _convConfig :: ConvConfigArgsExpr,
+        _convPadding :: ConvPaddingArgsExpr
+      }
   | ClampDescription {_min :: Int, _expr :: Int, _max :: Int}
   | ClampScalarDescription
       { _imin :: Elem,
@@ -280,6 +294,13 @@ data UExpr
         _convConfig :: ConvConfigArgsExpr,
         _convPadding :: ConvPaddingArgsExpr
       }
+  | UTasoConv
+      { _input :: Expr,
+        _weight :: Expr,
+        _tasoPaddingMode :: TasoPaddingMode,
+        _convConfig :: ConvConfigArgsExpr,
+        _convPadding :: ConvPaddingArgsExpr
+      }
   | UClamp {_min :: Expr, _expr :: Expr, _max :: Expr}
   | UClampScalar
       { _imin :: Elem,
@@ -319,6 +340,7 @@ describe (URelabel e m) = RelabelDescription (_id e) m
 describe (UDot l r c b) = DotDescription (_id l) (_id r) c b
 describe (UConvBase i w c) = ConvBaseDescription (_id i) (_id w) c
 describe (UConv i w c p) = ConvDescription (_id i) (_id w) c p
+describe (UTasoConv i w m c p) = TasoConvDescription (_id i) (_id w) m c p
 describe (UClamp mi e ma) = ClampDescription (_id mi) (_id e) (_id ma)
 describe (UClampScalar mi e ma) = ClampScalarDescription mi (_id e) ma
 describe (UReverseTensor e a) = ReverseTensorDescription (_id e) a
@@ -410,6 +432,14 @@ data Expr
       { _id :: Int,
         _input :: Expr,
         _weight :: Expr,
+        _convConfig :: ConvConfigArgsExpr,
+        _convPadding :: ConvPaddingArgsExpr
+      }
+  | TasoConv
+      { _id :: Int,
+        _input :: Expr,
+        _weight :: Expr,
+        _tasoPaddingMode :: TasoPaddingMode,
         _convConfig :: ConvConfigArgsExpr,
         _convPadding :: ConvPaddingArgsExpr
       }
@@ -546,6 +576,16 @@ instance PPrint Expr where
         pformatPrec 11 c,
         pformatPrec 11 p
       ]
+  pformatPrec n (TasoConv _ i w m c p) =
+    prettyWithConstructor
+      n
+      "tasoConv"
+      [ "inputs=" <> pformatPrec 11 i,
+        "weights=" <> pformatPrec 11 w,
+        pformatPrec 11 m,
+        pformatPrec 11 c,
+        pformatPrec 11 p
+      ]
   pformatPrec n (Clamp _ mi e ma) =
     prettyWithConstructor
       n
@@ -606,6 +646,7 @@ identify i (URelabel e m) = Relabel i e m
 identify i (UDot l r c b) = Dot i l r c b
 identify i (UConvBase input w c) = ConvBase i input w c
 identify i (UConv input w c p) = Conv i input w c p
+identify i (UTasoConv input w m c p) = TasoConv i input w m c p
 identify i (UClamp mi e ma) = Clamp i mi e ma
 identify i (UClampScalar mi e ma) = ClampScalar i mi e ma
 identify i (UReverseTensor e a) = ReverseTensor i e a

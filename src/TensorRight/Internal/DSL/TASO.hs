@@ -15,6 +15,9 @@ module TensorRight.Internal.DSL.TASO
     split1,
     transpose,
     matmul2D,
+    TasoPaddingMode (..),
+    Activation (..),
+    tasoConv,
     enlarge,
   )
 where
@@ -35,19 +38,24 @@ import TensorRight.Internal.DSL.DSL
     ValidNum,
     clampScalar,
     concatTensor,
+    ConvConfig (..),
+    ConvPadding (..),
     dot,
     liftInContext,
+    newMap,
     numBinOp,
     numBinScalarOp,
     rankPrecondition,
     relabel,
     shapeOf,
+    tasoConvImpl,
     typeOf,
   )
 import Control.Monad.Except (MonadError (throwError))
 import qualified TensorRight.Internal.DSL.Expr as E
 import TensorRight.Internal.DSL.Expr
-  ( UExpr (UEnlarge),
+  ( TasoPaddingMode (..),
+    UExpr (UEnlarge),
     internWithCheck,
   )
 import TensorRight.Internal.DSL.Shape
@@ -55,7 +63,7 @@ import TensorRight.Internal.DSL.Shape
     abstractShapeAllRefs,
     getRClassByRClassRef,
   )
-import TensorRight.Internal.DSL.Parameters (ParamDesc)
+import TensorRight.Internal.DSL.Parameters (ParamDesc (ParamDesc))
 import TensorRight.Internal.Util.Error (assert)
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import Prelude hiding (concat)
@@ -153,6 +161,59 @@ matmul2D lhs' rhs' contract = do
   rhsRClasses <- traverse (getRClassByRClassRef rhsShape) rhsRefs
   traverse_ (`rankPrecondition` 1) $ lhsRClasses <> rhsRClasses
   dot lhs rhs contract []
+
+-- | Activations accepted by TASO's Conv2D operator.
+data Activation = None | Relu
+  deriving (Eq, Show)
+
+-- | TASO's rank-four Conv2D. The frontend establishes only the structural
+-- operator contract. The backend asserts the @SAME@/@VALID@ padding equations
+-- and unit-dilation restriction before evaluating the existing convolution.
+tasoConv ::
+  forall a input weights.
+  (ExprInContext input, ExprInContext weights, ValidNum a) =>
+  ConvConfig ->
+  TasoPaddingMode ->
+  Activation ->
+  input ->
+  weights ->
+  DSLContext Expr
+tasoConv config mode activation input' weights' = do
+  input <- liftInContext input'
+  weights <- liftInContext weights'
+  inputShape <- shapeOf input
+  weightShape <- shapeOf weights
+  let inputRefs = HS.toList $ abstractShapeAllRefs inputShape
+      weightRefs = HS.toList $ abstractShapeAllRefs weightShape
+      spatialRefs = [ref | ParamDesc ref _ <- strides config]
+  assert "tasoConv: input must have exactly four axes" $ length inputRefs == 4
+  assert "tasoConv: weights must have exactly four axes" $ length weightRefs == 4
+  assert "tasoConv: expected one batch rclass" $ length (batchRClasses config) == 1
+  assert "tasoConv: expected one input-feature rclass" $ length (featureRClasses config) == 1
+  assert "tasoConv: expected one output-feature rclass" $ length (outputFeatureRClasses config) == 1
+  assert "tasoConv: expected two spatial stride rclasses" $ length spatialRefs == 2
+  inputRClasses <- traverse (getRClassByRClassRef inputShape) inputRefs
+  weightRClasses <- traverse (getRClassByRClassRef weightShape) weightRefs
+  traverse_ (`rankPrecondition` 1) $ inputRClasses <> weightRClasses
+  let freshPadding name =
+        traverse
+          (\ref -> ParamDesc ref <$> (newMap name =<< getRClassByRClassRef inputShape ref))
+          spatialRefs
+  low <- freshPadding "tasoConvLow"
+  ldilation <- freshPadding "tasoConvLDilation"
+  high <- freshPadding "tasoConvHigh"
+  rdilation <- freshPadding "tasoConvRDilation"
+  output <-
+    tasoConvImpl input weights mode config $
+      ConvPadding
+        { low = low,
+          ldilation = ldilation,
+          high = high,
+          rdilation = rdilation
+        }
+  case activation of
+    None -> return output
+    Relu -> relu @a output
 
 -- | TASO's rank-four enlarge operator. It centers @source@ in the H/W shape
 -- of @reference@. The frontend fixes the four abstract axes to singleton

@@ -46,6 +46,7 @@ module TensorRight.Internal.Core.Tensor
     dot,
     convBase,
     conv,
+    tasoConv,
     clamp,
     clampScalar,
     reverseTensor,
@@ -76,6 +77,7 @@ import TensorRight.Internal.Core.Tensor.Typed
   ( ConvConfigArgs,
     ConvPaddingArgs,
     PaddingArgs,
+    TasoPaddingMode,
   )
 import qualified TensorRight.Internal.Core.Tensor.Typed as Typed
 import TensorRight.Internal.Util.Error (ErrorEnv)
@@ -583,6 +585,23 @@ conv inputo weightso baseConfig paddingConfig = do
   applyValBinary
     (\i w -> Typed.conv i w baseConfig paddingConfig)
     (\i w -> Typed.conv i w baseConfig paddingConfig)
+    input
+    weights
+
+tasoConv ::
+  (TensorOperand t1, TensorOperand t2) =>
+  t1 ->
+  t2 ->
+  TasoPaddingMode ->
+  ConvConfigArgs ->
+  ConvPaddingArgs ->
+  ErrorEnv Tensor
+tasoConv inputo weightso mode baseConfig paddingConfig = do
+  input <- tensor inputo
+  weights <- tensor weightso
+  applyValBinary
+    (\i w -> Typed.tasoConv i w mode baseConfig paddingConfig)
+    (\i w -> Typed.tasoConv i w mode baseConfig paddingConfig)
     input
     weights
 

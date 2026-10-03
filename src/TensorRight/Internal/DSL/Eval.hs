@@ -67,6 +67,7 @@ import TensorRight.Internal.Core.Tensor
     constantTensor,
     conv,
     convBase,
+    tasoConv,
     createTensor,
     dot,
     dynamicSlice,
@@ -102,6 +103,7 @@ import TensorRight.Internal.Core.Tensor.Typed
         convLowPadding,
         convRDilation
       ),
+    TasoPaddingMode (TasoSame, TasoValid),
     DySliceArgs (DySliceArgs, sizes, start),
     PaddingArgs (PaddingArgs, highPad, interiorPad, lowPad),
     SliceArgs (SliceArgs, end, start, strides),
@@ -131,6 +133,7 @@ import TensorRight.Internal.DSL.Expr
         Constant,
         Conv,
         ConvBase,
+        TasoConv,
         Dot,
         DynamicSlice,
         DynamicUpdateSlice,
@@ -153,6 +156,7 @@ import TensorRight.Internal.DSL.Expr
     Params,
     Rewrite (Rewrite),
     SliceArgsExpr (SliceArgsExpr, end, start, strides),
+    TasoPaddingMode (Same, Valid),
     exprId,
   )
 import TensorRight.Internal.DSL.Identifier (MapIdentifier, RClassIdentifier, TensorIdentifier)
@@ -512,6 +516,48 @@ eval'
             convHighPadding = h,
             convRDilation = rd
           }
+eval'
+  ( TasoConv
+      _
+      input
+      weight
+      mode
+      ConvConfigArgsExpr {..}
+      ConvPaddingArgsExpr {..}
+    ) = do
+    i <- eval input
+    w <- eval weight
+    lhsShape <- exprShape input
+    rhsShape <- exprShape weight
+    batchAxes <- rclassesToAxes lhsShape batchRClasses
+    featureAxes <- rclassesToAxes lhsShape featureRClasses
+    outputFeatureAxes <- rclassesToAxes rhsShape outputFeatureRClasses
+    s <- getIndicesFromParams strides
+    si <- getIndicesFromParams contractingSIMaps
+    l <- getSizesFromParams low
+    ld <- getSizesFromParams ldilation
+    h <- getSizesFromParams high
+    rd <- getSizesFromParams rdilation
+    let coreMode = case mode of
+          Same -> TasoSame
+          Valid -> TasoValid
+    return $ tasoConv
+      i
+      w
+      coreMode
+      ConvConfigArgs
+        { convBatchAxes = batchAxes,
+          convFeatureAxes = featureAxes,
+          convOutputFeatureAxes = outputFeatureAxes,
+          convStrides = s,
+          convContractingSIMap = si
+        }
+      ConvPaddingArgs
+        { convLowPadding = l,
+          convLDilation = ld,
+          convHighPadding = h,
+          convRDilation = rd
+        }
 eval' (Clamp _ emin' e' emax') = do
   emin <- eval emin'
   e <- eval e'

@@ -52,6 +52,7 @@ module TensorRight.Internal.Core.Tensor.Typed
     dot,
     convBase,
     conv,
+    tasoConv,
     clamp,
     clampScalar,
     reverseTensor,
@@ -61,6 +62,7 @@ module TensorRight.Internal.Core.Tensor.Typed
     PaddingArgs (..),
     ConvConfigArgs (..),
     ConvPaddingArgs (..),
+    TasoPaddingMode (..),
     reshapeDegenerate,
     tensorAssumption,
   )
@@ -1156,6 +1158,10 @@ data ConvPaddingArgs = ConvPaddingArgs
     convRDilation :: Sizes
   }
 
+-- | The two padding modes accepted by TASO's @Conv2D@ operator.
+data TasoPaddingMode = TasoSame | TasoValid
+  deriving (Eq, Show)
+
 conv ::
   ( TensorOperand t1 (TensorNum a),
     TensorOperand t2 (TensorNum a),
@@ -1182,6 +1188,61 @@ conv input weights convBaseConfig ConvPaddingArgs {..} = do
               highPad = fromKVPairs []
             }
   convBase paddedInput paddedWeights convBaseConfig
+
+-- | TASO's rank-four convolution. Padding parameters remain in the expression
+-- for static shape checking, while this backend semantics asserts their exact
+-- @SAME@ or @VALID@ relationship to the input, kernel, and strides.
+tasoConv ::
+  ( TensorOperand t1 (TensorNum a),
+    TensorOperand t2 (TensorNum a),
+    IsTensorNum a
+  ) =>
+  t1 ->
+  t2 ->
+  TasoPaddingMode ->
+  ConvConfigArgs ->
+  ConvPaddingArgs ->
+  ErrorEnv (Tensor (TensorNum a))
+tasoConv inputo weightso mode config@ConvConfigArgs {..} padding@ConvPaddingArgs {..} = do
+  input <- tensor inputo
+  weights <- tensor weightso
+  let inputShape = tensorShape input
+      weightShape = tensorShape weights
+      inputAxes = tensorAllAxes input
+      weightAxes = tensorAllAxes weights
+      spatialAxes = inputAxes `HS.difference` (convBatchAxes `HS.union` convFeatureAxes)
+      inputSpatial = restrictAxes spatialAxes inputShape
+      kernelSpatial = restrictAxes spatialAxes weightShape
+      strideSizes = castAxisMap convStrides
+      ones = mapAxisMap (const 1) strideSizes
+  assert "tasoConv: input must be rank 4" $ HS.size inputAxes == 4
+  assert "tasoConv: weights must be rank 4" $ HS.size weightAxes == 4
+  assert "tasoConv: expected one batch axis" $ HS.size convBatchAxes == 1
+  assert "tasoConv: expected one input-feature axis" $ HS.size convFeatureAxes == 1
+  assert "tasoConv: expected one output-feature axis" $ HS.size convOutputFeatureAxes == 1
+  assert "tasoConv: expected two spatial axes" $ HS.size spatialAxes == 2
+  assert "tasoConv: strides must be positive" $ symAll (.>= 1) $ asHashMap convStrides
+  assert "tasoConv: input dilation must be one" $ sameAxisMap convLDilation ones
+  assert "tasoConv: kernel dilation must be one" $ sameAxisMap convRDilation ones
+  case mode of
+    TasoValid -> do
+      assert "tasoConv: VALID low padding must be zero" $
+        sameAxisMap convLowPadding (mapAxisMap (const 0) convLowPadding)
+      assert "tasoConv: VALID high padding must be zero" $
+        sameAxisMap convHighPadding (mapAxisMap (const 0) convHighPadding)
+    TasoSame -> do
+      outputSpatial <- safeDivAxisMap (subAxisMap (addAxisMap inputSpatial strideSizes) ones) strideSizes
+      let totalPadding =
+            mapAxisMap (symMax 0) $
+              subAxisMap
+                (addAxisMap (mulAxisMap (subAxisMap outputSpatial ones) strideSizes) kernelSpatial)
+                inputSpatial
+      expectedLow <- safeDivAxisMap totalPadding (mapAxisMap (const 2) totalPadding)
+      assert "tasoConv: SAME low padding is the lower half of total padding" $
+        sameAxisMap convLowPadding expectedLow
+      assert "tasoConv: SAME high padding is the remaining total padding" $
+        sameAxisMap convHighPadding (subAxisMap totalPadding expectedLow)
+  conv input weights config padding
 
 clamp ::
   ( TensorOperand t (TensorNum a),

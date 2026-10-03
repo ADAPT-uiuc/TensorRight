@@ -65,6 +65,7 @@ module TensorRight.Internal.DSL.DSL
     boolUnaryOp,
     convBase,
     conv,
+    tasoConvImpl,
     monitorExprOnFailure,
     monitorMapOnFailure,
     clamp,
@@ -133,6 +134,7 @@ import TensorRight.Internal.DSL.Expr
     Expr,
     NumTensorAssumption (NumTensorAssumption),
     PaddingArgsExpr (PaddingArgsExpr, high, interior, low),
+    TasoPaddingMode,
     Params,
     Rewrite,
     SliceArgsExpr (SliceArgsExpr, end, start, strides),
@@ -164,6 +166,7 @@ import TensorRight.Internal.DSL.Expr
         UReverseTensor,
         USelect,
         USlice,
+        UTasoConv,
         UVar
       ),
     checkParamsWellFormed,
@@ -1355,6 +1358,57 @@ convImpl
           inputPaddedShapeTy
           weightsPaddedShapeTy
           config
+
+tasoConvImpl ::
+  (ExprInContext input, ExprInContext weights) =>
+  input ->
+  weights ->
+  TasoPaddingMode ->
+  ConvConfig ->
+  ConvPadding ->
+  DSLContext Expr
+tasoConvImpl input' weights' mode config@ConvConfig {..} ConvPadding {..} = do
+  input <- liftInContext input'
+  weights <- liftInContext weights'
+  let stridesMap = toParamMaps strides
+      siMapsMap = toParamMaps contractingSIMaps
+      padl = toParamMaps low
+      padldilation = toParamMaps ldilation
+      padh = toParamMaps high
+      padrdilation = toParamMaps rdilation
+  internWithCheck
+    ( UTasoConv
+        input
+        weights
+        mode
+        ConvConfigArgsExpr
+          { batchRClasses = batchRClasses,
+            featureRClasses = featureRClasses,
+            outputFeatureRClasses = outputFeatureRClasses,
+            strides = stridesMap,
+            contractingSIMaps = siMapsMap
+          }
+        ConvPaddingArgsExpr
+          { low = padl,
+            ldilation = padldilation,
+            high = padh,
+            rdilation = padrdilation
+          }
+    )
+    $ do
+      inputShapeTy@(_, dtype) <- shapeAndTypeOf input
+      padElem <- case dtype of
+        IntType -> return $ toElem (0 :: TensorInt)
+        RealType -> return $ toElem (0 :: TensorReal)
+        BoolType -> mrgThrowError "Cannot TASO-conv a boolean tensor"
+      inputPaddedShapeTy <-
+        padCheck inputShapeTy padElem $
+          Padding {low = low, interior = ldilation, high = high}
+      weightsShapeTy <- shapeAndTypeOf weights
+      weightsPaddedShapeTy <-
+        padCheck weightsShapeTy padElem $
+          Padding {low = [], interior = rdilation, high = []}
+      convBaseCheck inputPaddedShapeTy weightsPaddedShapeTy config
 
 -- | Clamp operator.
 clamp ::

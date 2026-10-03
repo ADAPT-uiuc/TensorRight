@@ -82,7 +82,7 @@ import TensorRight.Internal.DSL.DSL
 import qualified TensorRight.Internal.DSL.DSL as DSL
 import TensorRight.Internal.DSL.Expr
   ( Env (exprDTypes, preConditions, rankConditions),
-    Expr (Enlarge),
+    Expr (Enlarge, TasoConv),
     exprId,
   )
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)), AtSyntax ((@@)))
@@ -1448,6 +1448,43 @@ tensorTest =
                   _ -> assertFailure "expected an Enlarge expression"
                 null (preConditions env) @?= True
                 map (`HM.lookup` rankConditions env) rclasses @?= replicate 4 (Just 1),
+          testCase "TASO convolution has backend-asserted padding semantics" $ do
+            let result = runDSLContext $ do
+                  n <- newRClass "batch"
+                  c <- newRClass "input-channel"
+                  f <- newRClass "output-channel"
+                  h <- newRClass "height"
+                  w <- newRClass "width"
+                  nSize <- newMap "batch-size" n
+                  cSize <- newMap "input-channel-size" c
+                  fSize <- newMap "output-channel-size" f
+                  hSize <- newMap "height-size" h
+                  wSize <- newMap "width-size" w
+                  strideH <- newMap "stride-height" h
+                  strideW <- newMap "stride-width" w
+                  siC <- newMap "si-channel" c
+                  siH <- newMap "si-height" h
+                  siW <- newMap "si-width" w
+                  input <- newTensor @TensorInt "input" [n --> nSize, c --> cSize, h --> hSize, w --> wSize]
+                  weights <- newTensor @TensorInt "weights" [f --> fSize, c --> cSize, h --> hSize, w --> wSize]
+                  let config =
+                        DSL.ConvConfig
+                          { DSL.batchRClasses = [ByRClass n],
+                            DSL.featureRClasses = [ByRClass c],
+                            DSL.outputFeatureRClasses = [ByRClass f],
+                            DSL.strides = [h --> strideH, w --> strideW],
+                            DSL.contractingSIMaps = [c --> siC, h --> siH, w --> siW]
+                          }
+                  expr <- TASO.tasoConv @TensorInt config TASO.Same TASO.None input weights
+                  pure (expr, [n, c, f, h, w])
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((expr, rclasses), env) -> do
+                case expr of
+                  TasoConv {} -> pure ()
+                  _ -> assertFailure "expected a TasoConv expression"
+                null (preConditions env) @?= True
+                map (`HM.lookup` rankConditions env) rclasses @?= replicate 5 (Just 1),
           testCase "TASO split returns the selected direct concat operand" $ do
             let result = runDSLContext $ do
                   axis <- newRClass "axis"
