@@ -97,6 +97,7 @@ import TensorRight.Internal.DSL.Identifier (RClassIdentifier)
 import TensorRight.Internal.DSL.Shape
   ( AbstractShape,
   )
+import TensorRight.Internal.Util.Pretty (printFailure, printSuccess, printTitle)
 
 verifyDSLWithNDim ::
   GrisetteSMTConfig ->
@@ -246,7 +247,7 @@ printRewriteNameLine :: DSLContext Rewrite -> IO ()
 printRewriteNameLine rewrite = do
   case getRewriteName rewrite of
     Left err -> fail $ T.unpack err
-    Right name -> putStrLn $ "====> " <> T.unpack name
+    Right name -> printTitle $ "====> " <> T.unpack name
 
 data Result = Result
   { elapsedTime :: Double,
@@ -259,21 +260,14 @@ instance Semigroup Result where
 
 printResult :: Maybe String -> Result -> IO ()
 printResult subTheory Result {..} =
-  putStrLn $
-    "["
-      <> ( if isRight result
-             then "SUCCESS"
-             else "FAIL"
-         )
-      <> maybe "" ("-" <>) subTheory
-      <> "]: ["
-      <> show elapsedTime
-      <> "s] Verification "
-      <> (if isRight result then "succeeded" else "failed")
-      <> ( case result of
-             Right () -> "."
-             Left e -> " with error: " <> show e
-         )
+  if isRight result
+    then printSuccess theory $ time <> " Verification succeeded."
+    else printFailure theory $ time <> " Verification failed with error: " <> showError result
+  where
+    showError (Left err) = show err
+    showError (Right _) = ""
+    time = "[" <> show elapsedTime <> "s]"
+    theory = maybe "" ("-" <>) subTheory
 
 bracketFailure ::
   DSLContext Rewrite -> IO () -> IO Result
