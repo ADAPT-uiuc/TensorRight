@@ -1319,8 +1319,8 @@ tensorTest =
             case result of
               Left err -> assertFailure $ show err
               Right (expr, env) ->
-                HM.lookup (exprId expr) (exprDTypes env) @?= Just RealType
-        , testCase "rankPrecondition records an exact rank" $ do
+                HM.lookup (exprId expr) (exprDTypes env) @?= Just RealType,
+          testCase "rankPrecondition records an exact rank" $ do
             let result = runDSLContext $ do
                   rclass <- newRClass "rclass"
                   rankPrecondition rclass 3
@@ -1328,8 +1328,8 @@ tensorTest =
             case result of
               Left err -> assertFailure $ show err
               Right (rclass, env) ->
-                HM.lookup rclass (rankConditions env) @?= Just 3
-        , testCase "rankPrecondition rejects invalid and conflicting ranks" $ do
+                HM.lookup rclass (rankConditions env) @?= Just 3,
+          testCase "rankPrecondition rejects invalid and conflicting ranks" $ do
             let invalidRank = runDSLContext $ do
                   rclass <- newRClass "rclass"
                   rankPrecondition rclass 0
@@ -1342,8 +1342,8 @@ tensorTest =
               Right _ -> assertFailure "rank 0 should be rejected"
             case conflictingRanks of
               Left _ -> pure ()
-              Right _ -> assertFailure "conflicting ranks should be rejected"
-        , testCase "iota and concat require a rank-one axis" $ do
+              Right _ -> assertFailure "conflicting ranks should be rejected",
+          testCase "iota and concat require a rank-one axis" $ do
             let iotaResult = runDSLContext $ do
                   rclass <- newRClass "rclass"
                   size <- newMap "size" rclass
