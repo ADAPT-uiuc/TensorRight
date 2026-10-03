@@ -3,12 +3,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 module TensorRight.Internal.DSL.TASO
   ( ewadd,
     ewmul,
     smul,
     relu,
+    concat,
     enlarge,
   )
 where
@@ -28,6 +30,7 @@ import TensorRight.Internal.DSL.DSL
     ExprInContext,
     ValidNum,
     clampScalar,
+    concatTensor,
     liftInContext,
     numBinOp,
     numBinScalarOp,
@@ -45,6 +48,7 @@ import TensorRight.Internal.DSL.Shape
     getRClassByRClassRef,
   )
 import TensorRight.Internal.Util.Error (assert)
+import Prelude hiding (concat)
 
 -- | TASO's elementwise addition has exactly TensorRight's numeric
 -- elementwise-addition semantics.
@@ -64,6 +68,17 @@ smul = numBinScalarOp Mul
 -- | TASO's ReLU is a clamp from zero to positive infinity.
 relu :: forall a lhs. (ExprInContext lhs, ValidNum a) => lhs -> DSLContext Expr
 relu e = clampScalar @a 0 e posInf
+
+-- | TASO's concat has exactly TensorRight's concatenation semantics. The
+-- selected rclass is fixed to rank one by 'concatTensor', so it denotes one
+-- concrete TASO axis.
+concat ::
+  (ExprInContext lhs, ExprInContext rhs) =>
+  RClassRef ->
+  lhs ->
+  rhs ->
+  DSLContext Expr
+concat axis lhs rhs = concatTensor lhs rhs axis
 
 -- | TASO's rank-four enlarge operator. It centers @source@ in the H/W shape
 -- of @reference@. The frontend fixes the four abstract axes to singleton
