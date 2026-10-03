@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,6 +32,7 @@ library
       TensorRight.Internal.DSL.RelabelMap
       TensorRight.Internal.DSL.Shape
       TensorRight.Internal.DSL.Syntax
+      TensorRight.Internal.DSL.TASO
       TensorRight.Internal.DSL.Verify
       TensorRight.Internal.Util.Error
       TensorRight.Internal.Util.Pretty

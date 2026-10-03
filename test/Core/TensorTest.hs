@@ -84,6 +84,7 @@ import TensorRight.Internal.DSL.Expr
     exprId,
   )
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
+import qualified TensorRight.Internal.DSL.TASO as TASO
 import TensorRight.Internal.Util.Error (ErrorEnv)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -1395,13 +1396,23 @@ tensorTest =
             case conflictingRanks of
               Left _ -> pure ()
               Right _ -> assertFailure "conflicting ranks should be rejected",
-          testCase "enlarge is a backend-asserted expression" $ do
+          testCase "TASO enlarge adds no frontend preconditions" $ do
             let result = runDSLContext $ do
-                  rclass <- newRClass "rclass"
-                  size <- newMap "size" rclass
-                  low <- newMap "low" rclass
-                  input <- newTensor @TensorInt "input" [rclass --> size]
-                  DSL.enlarge input [(ByRClass rclass, ssym "target")] [rclass --> low]
+                  h <- newRClass "height"
+                  w <- newRClass "width"
+                  hSize <- newMap "height-size" h
+                  wSize <- newMap "width-size" w
+                  hLow <- newMap "height-low" h
+                  wLow <- newMap "width-low" w
+                  input <- newTensor @TensorInt "input" [h --> hSize, w --> wSize]
+                  TASO.enlarge
+                    (ByRClass h --> hSize)
+                    (ByRClass w --> wSize)
+                    hLow
+                    wLow
+                    (ssym "target-height")
+                    (ssym "target-width")
+                    input
             case result of
               Left err -> assertFailure $ show err
               Right (expr, env) -> do
