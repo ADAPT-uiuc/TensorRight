@@ -487,7 +487,7 @@ numBinScalarOp op lhs' rhs = do
     typeLhs <- typeOf lhs
     assert "lhs must be int or real" $ typeLhs `elem` [IntType, RealType]
     assert "lhs and rhs must have the same dtype" $ toDType rhs == typeLhs
-    return (shapeLhs, IntType)
+    return (shapeLhs, typeLhs)
 
 -- | Boolean binary operation. The lhs and rhs must have the same shape, and
 -- the dtype of lhs and rhs must be 'BoolType'.

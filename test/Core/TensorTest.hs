@@ -17,7 +17,8 @@ import Grisette
     ITEOp (symIte),
     LogicalOp ((.&&)),
     SimpleMergeable,
-    Solvable (con, isym, ssym),
+    Solvable (con, ssym),
+    SymAlgReal,
     SymBool,
     SymEq ((.==)),
     SymInteger,
@@ -32,7 +33,7 @@ import TensorRight.Internal.Core.Axis
     Sizes,
     getAxis,
   )
-import TensorRight.Internal.Core.Tensor.TensorInt (TensorInt, nonInf)
+import TensorRight.Internal.Core.Tensor.TensorInt (TensorInt, TensorReal, nonInf)
 import TensorRight.Internal.Core.Tensor.Typed
   ( ConvConfigArgs
       ( ConvConfigArgs,
@@ -64,10 +65,21 @@ import TensorRight.Internal.Core.Tensor.Typed
     tensorAccess,
     transpose,
   )
+import TensorRight.Internal.DSL.DSL
+  ( DType (RealType),
+    NumBinOp (Mul),
+    newMap,
+    newRClass,
+    newTensor,
+    numBinScalarOp,
+    runDSLContext,
+  )
+import TensorRight.Internal.DSL.Expr (Env (exprDTypes), exprId)
+import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import TensorRight.Internal.Util.Error (ErrorEnv)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
-import Test.HUnit ((@?=))
+import Test.HUnit (assertFailure, (@?=))
 import TestUtil (eqWhenSuccess, isError, isNotError)
 
 simpleTensor ::
@@ -1292,5 +1304,18 @@ tensorTest =
                           (init table)
                    in Just $ TensorElemSum res
               }
+        ],
+      testGroup
+        "DSL"
+        [ testCase "numBinScalarOp preserves a real lhs dtype" $ do
+            let result = runDSLContext $ do
+                  rclass <- newRClass "rclass"
+                  size <- newMap "size" rclass
+                  input <- newTensor @TensorReal "input" [rclass --> size]
+                  numBinScalarOp Mul input (nonInf $ (ssym "scalar" :: SymAlgReal))
+            case result of
+              Left err -> assertFailure $ show err
+              Right (expr, env) ->
+                HM.lookup (exprId expr) (exprDTypes env) @?= Just RealType
         ]
     ]
