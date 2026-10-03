@@ -93,6 +93,12 @@ executables:
     dependencies: tensor-right
     ghc-options: *exe-ghc-options
     default-extensions: *exe-extensions
+  rules-taso-enlarge:
+    source-dirs: rules/taso/enlarge
+    main: Main.hs
+    dependencies: tensor-right
+    ghc-options: *exe-ghc-options
+    default-extensions: *exe-extensions
   rules-xla-dyslice:
     source-dirs: rules/xla/dyslice
     main: Main.hs

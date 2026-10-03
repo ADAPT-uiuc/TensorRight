@@ -9,6 +9,12 @@ cradle:
     - path: "./rules/debug/Paths_tensor_right.hs"
       component: "tensor-right:exe:rules-debug"
 
+    - path: "./rules/taso/enlarge/Main.hs"
+      component: "tensor-right:exe:rules-taso-enlarge"
+
+    - path: "./rules/taso/enlarge/Paths_tensor_right.hs"
+      component: "tensor-right:exe:rules-taso-enlarge"
+
     - path: "./rules/xla/add/Main.hs"
       component: "tensor-right:exe:rules-xla-add"
 
