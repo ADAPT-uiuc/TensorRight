@@ -1,4 +1,6 @@
-# TensorRight
+# TensorRight: Automated Verification of Tensor Graph Rewrites
+
+<img src="docs/images/award.png" alt="Distinguished Paper Award" width=110> <img src="docs/images/artifacts_available_v1_1.png" alt="Badge: Artifacts Available" width=110> <img src="docs/images/artifacts_evaluated_reusable_v1_1.png" alt="Badge: Artifacts Available - Reusable" width=110>
 
 TensorRight is an automatic tool to verify tensor graph rewrites for tensors of arbitrary ranks and sizes.
 Tensor Graph Rewriting is one of the key optimizations in Tensor Compilers such as [XLA](https://github.com/openxla/xla).
@@ -18,7 +20,7 @@ TensorRight can successfully represent 125 of the 200+ rewrites present in [XLA'
 
 - [TensorRight: Automated Verification of Tensor Graph Rewrites](https://dl.acm.org/doi/10.1145/3704865) <br/>
 Jai Arora, Sirui Lu, Devansh Jain, Tianfan Xu, Farzin Houshmand, Phitchaya Mangpo Phothilimthana, Mohsen Lesani, Praveen Narayanan, Karthik Srinivasa Murthy, Rastislav Bodik, Amit Sabne, and Charith Mendis. <br/>
-In Proceedings of the 52nd ACM SIGPLAN Symposium on Principles of Programming Languages (POPL'25), January 2025, Denver, Colorado, USA
+In Proceedings of the 52nd ACM SIGPLAN Symposium on Principles of Programming Languages (POPL'25), January 2025, Denver, Colorado, USA <p style="color: red;">🏆Distinguished Paper Award</p>
 
 <details class="bibtex">
     <summary>BibTeX</summary>

@@ -43,7 +43,7 @@ rule00 _ = do
   [plow, phigh] <- newNonNegMaps ["plow", "phigh"] spatial
   pint <- newMap "pint" spatial
   newlow <- sumMap "newlow" [low, plow]
-  newint <- combineMap "newlow" (\[a, b] -> a + b) [ldilation, pint]
+  newint <- combineMap "newInt" (\[a, b] -> a + b) [ldilation, pint]
   newhigh <- combineMap "newhigh" sum [high, phigh]
 
   [siMapLhsFeature, siMapRhsFeature] <-
