@@ -10,30 +10,31 @@ run_and_capture() {
       LOCAL_SUCCESS=0
       while IFS= read -r line; do
         echo "$line" 1>&2
-        if [[ $line =~ ^\[SUCCESS\].* ]]; then
+        clean_line=$(sed -r 's/\x1B\[[0-9;]*[mK]//g' <<<"$line")
+        if [[ $clean_line =~ ^\[SUCCESS\].* ]]; then
           export LOCAL_SUCCESS=$((LOCAL_SUCCESS + 1))
-        elif [[ $line =~ ^\[SUCCESS-Overall\].* ]]; then
+        elif [[ $clean_line =~ ^\[SUCCESS-Overall\].* ]]; then
           export LOCAL_SUCCESS=$((LOCAL_SUCCESS + 1))
-        elif [[ $line =~ ^\[SUCCESS-.*\].* ]]; then
+        elif [[ $clean_line =~ ^\[SUCCESS-.*\].* ]]; then
           true
-        elif [[ $line =~ ^\[FAIL\].* ]]; then
+        elif [[ $clean_line =~ ^\[FAIL\].* ]]; then
           export LOCAL_FAILED=$((LOCAL_FAILED + 1))
-        elif [[ $line =~ ^\[FAIL-Overall\].* ]]; then
+        elif [[ $clean_line =~ ^\[FAIL-Overall\].* ]]; then
           export LOCAL_FAILED=$((LOCAL_FAILED + 1))
-        elif [[ $line =~ ^\[FAIL-.*\].* ]]; then
+        elif [[ $clean_line =~ ^\[FAIL-.*\].* ]]; then
           true
-        elif [[ $line =~ ^\[WARNING\].* ]]; then
+        elif [[ $clean_line =~ ^\[WARNING\].* ]]; then
           true
-        elif [[ $line =~ ^\[INFO-.*\].* ]]; then
+        elif [[ $clean_line =~ ^\[INFO-.*\].* ]]; then
           true
-        elif [[ $line =~ ^\[INFO\].* ]]; then
+        elif [[ $clean_line =~ ^\[INFO\].* ]]; then
           true
-        elif [[ $line =~ ^====\>.* ]]; then
+        elif [[ $clean_line =~ ^====\>.* ]]; then
           true
-        elif [[ $line =~ ^\>\>\>.* ]]; then
+        elif [[ $clean_line =~ ^\>\>\>.* ]]; then
           true
         else
-          echo "Unknown line: $line"
+          echo "Unknown line: $clean_line"
           exit 1
         fi
       done
