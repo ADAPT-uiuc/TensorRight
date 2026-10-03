@@ -22,6 +22,10 @@ module TensorRight.Internal.DSL.DSL
     DType (..),
     Params,
     Expr,
+    ExprInContext,
+    liftInContext,
+    shapeOf,
+    typeOf,
     Env (..),
     DSLContext,
     intElem,
@@ -61,6 +65,7 @@ module TensorRight.Internal.DSL.DSL
     boolUnaryOp,
     convBase,
     conv,
+    tasoConvImpl,
     monitorExprOnFailure,
     monitorMapOnFailure,
     clamp,
@@ -132,6 +137,7 @@ import TensorRight.Internal.DSL.Expr
     Params,
     Rewrite,
     SliceArgsExpr (SliceArgsExpr, end, start, strides),
+    TasoPaddingMode,
     UExpr
       ( UBoolBinOp,
         UBoolScalarBinOp,
@@ -160,6 +166,7 @@ import TensorRight.Internal.DSL.Expr
         UReverseTensor,
         USelect,
         USlice,
+        UTasoConv,
         UVar
       ),
     checkParamsWellFormed,
@@ -1351,6 +1358,36 @@ convImpl
           inputPaddedShapeTy
           weightsPaddedShapeTy
           config
+
+tasoConvImpl ::
+  (ExprInContext input, ExprInContext weights) =>
+  input ->
+  weights ->
+  TasoPaddingMode ->
+  ConvConfig ->
+  DSLContext Expr
+tasoConvImpl input' weights' mode config@ConvConfig {..} = do
+  input <- liftInContext input'
+  weights <- liftInContext weights'
+  let stridesMap = toParamMaps strides
+      siMapsMap = toParamMaps contractingSIMaps
+  internWithCheck
+    ( UTasoConv
+        input
+        weights
+        mode
+        ConvConfigArgsExpr
+          { batchRClasses = batchRClasses,
+            featureRClasses = featureRClasses,
+            outputFeatureRClasses = outputFeatureRClasses,
+            strides = stridesMap,
+            contractingSIMaps = siMapsMap
+          }
+    )
+    $ do
+      inputShapeTy <- shapeAndTypeOf input
+      weightsShapeTy <- shapeAndTypeOf weights
+      convBaseCheck inputShapeTy weightsShapeTy config
 
 -- | Clamp operator.
 clamp ::

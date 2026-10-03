@@ -40,6 +40,8 @@ module TensorRight.Internal.Core.Tensor.Typed
     sliceStartEndStrides,
     pad,
     padLow,
+    enlarge,
+    tasoEnlarge,
     constant,
     relabel,
     transpose,
@@ -50,6 +52,7 @@ module TensorRight.Internal.Core.Tensor.Typed
     dot,
     convBase,
     conv,
+    tasoConv,
     clamp,
     clampScalar,
     reverseTensor,
@@ -59,6 +62,7 @@ module TensorRight.Internal.Core.Tensor.Typed
     PaddingArgs (..),
     ConvConfigArgs (..),
     ConvPaddingArgs (..),
+    TasoPaddingMode (..),
     reshapeDegenerate,
     tensorAssumption,
   )
@@ -781,6 +785,70 @@ padLow to v lowPadding = do
       )
       paddedShape
 
+-- | TASO's enlarge operator. It pads selected axes to at least their requested
+-- sizes, splitting extra padding with the lower side receiving the floor half.
+enlarge ::
+  (TensorOperand t elem, Num elem) =>
+  t ->
+  Sizes ->
+  Sizes ->
+  ErrorEnv (Tensor elem)
+enlarge to targetSizes lowPadding = do
+  t <- tensor to
+  let axes = tensorAllAxes t
+      targetAxes = allAxes targetSizes
+  assert "enlarge: target axes must be a subset of the tensor axes" $
+    targetAxes `HS.isSubsetOf` axes
+  assert "enlarge: lower-padding axes must equal target axes" $
+    allAxes lowPadding == targetAxes
+  assert "enlarge: target sizes must be non-negative" $
+    symAll (.>= 0) $
+      asHashMap targetSizes
+  let originalSizes = restrictAxes targetAxes $ tensorShape t
+      extraPadding = mapAxisMap (symMax 0) $ subAxisMap targetSizes originalSizes
+  assert "enlarge: lower padding must be floor(extra padding / 2)" $
+    zipFoldAxisMap
+      (\low extra -> (low + low) .<= extra .&& extra .<= (low + low + 1))
+      (con True)
+      (.&&)
+      lowPadding
+      extraPadding
+  let highPadding = subAxisMap extraPadding lowPadding
+  pad t 0 $
+    PaddingArgs
+      { lowPad = lowPadding,
+        interiorPad = mempty,
+        highPad = highPadding
+      }
+
+-- | TASO's rank-four enlarge operator. The reference contributes only its
+-- spatial sizes; source values are centered with zero padding.
+tasoEnlarge ::
+  (TensorOperand t elem, Num elem) =>
+  t ->
+  Sizes ->
+  Axes ->
+  ErrorEnv (Tensor elem)
+tasoEnlarge to referenceShape spatialAxes = do
+  t <- tensor to
+  let sourceAxes = tensorAllAxes t
+  assert "tasoEnlarge: source must be rank 4" $ HS.size sourceAxes == 4
+  assert "tasoEnlarge: reference must be rank 4" $ HS.size (allAxes referenceShape) == 4
+  assert "tasoEnlarge: expected exactly two spatial axes" $ HS.size spatialAxes == 2
+  assert "tasoEnlarge: spatial axes must be source axes" $
+    spatialAxes `HS.isSubsetOf` sourceAxes
+  assert "tasoEnlarge: reference axes must equal source axes" $
+    allAxes referenceShape == sourceAxes
+  let sourceSpatial = restrictAxes spatialAxes $ tensorShape t
+      referenceSpatial = restrictAxes spatialAxes referenceShape
+      extra = subAxisMap referenceSpatial sourceSpatial
+  assert "tasoEnlarge: source spatial sizes must not exceed reference sizes" $
+    symAll (.>= 0) $
+      asHashMap extra
+  low <- safeDivAxisMap extra $ mapAxisMap (const 2) extra
+  let high = subAxisMap extra low
+  pad t 0 $ PaddingArgs {lowPad = low, interiorPad = mempty, highPad = high}
+
 relabel ::
   (TensorOperand t elem) =>
   t ->
@@ -1092,6 +1160,10 @@ data ConvPaddingArgs = ConvPaddingArgs
     convRDilation :: Sizes
   }
 
+-- | The two padding modes accepted by TASO's @Conv2D@ operator.
+data TasoPaddingMode = TasoSame | TasoValid
+  deriving (Eq, Show)
+
 conv ::
   ( TensorOperand t1 (TensorNum a),
     TensorOperand t2 (TensorNum a),
@@ -1118,6 +1190,75 @@ conv input weights convBaseConfig ConvPaddingArgs {..} = do
               highPad = fromKVPairs []
             }
   convBase paddedInput paddedWeights convBaseConfig
+
+-- | TASO's rank-four convolution. Padding parameters remain in the expression
+-- for static shape checking, while this backend semantics asserts their exact
+-- @SAME@ or @VALID@ relationship to the input, kernel, and strides.
+tasoConv ::
+  ( TensorOperand t1 (TensorNum a),
+    TensorOperand t2 (TensorNum a),
+    IsTensorNum a
+  ) =>
+  t1 ->
+  t2 ->
+  TasoPaddingMode ->
+  ConvConfigArgs ->
+  ErrorEnv (Tensor (TensorNum a))
+tasoConv inputo weightso mode config@ConvConfigArgs {..} = do
+  input <- tensor inputo
+  weights <- tensor weightso
+  let inputShape = tensorShape input
+      weightShape = tensorShape weights
+      inputAxes = tensorAllAxes input
+      weightAxes = tensorAllAxes weights
+      spatialAxes = inputAxes `HS.difference` (convBatchAxes `HS.union` convFeatureAxes)
+      inputSpatial = restrictAxes spatialAxes inputShape
+      kernelSpatial = restrictAxes spatialAxes weightShape
+      strideSizes = castAxisMap convStrides
+      ones = mapAxisMap (const 1) strideSizes
+  assert "tasoConv: input must be rank 4" $ HS.size inputAxes == 4
+  assert "tasoConv: weights must be rank 4" $ HS.size weightAxes == 4
+  assert "tasoConv: expected one batch axis" $ HS.size convBatchAxes == 1
+  assert "tasoConv: expected one input-feature axis" $ HS.size convFeatureAxes == 1
+  assert "tasoConv: expected one output-feature axis" $ HS.size convOutputFeatureAxes == 1
+  assert "tasoConv: expected two spatial axes" $ HS.size spatialAxes == 2
+  assert "tasoConv: strides must be positive" $ symAll (.>= 1) $ asHashMap convStrides
+  (outputSpatial, lowPadding, highPadding) <- case mode of
+    TasoValid -> do
+      assert "tasoConv: VALID input spatial sizes must cover the kernel" $
+        symAll (.>= 0) $
+          asHashMap $
+            subAxisMap inputSpatial kernelSpatial
+      output <- safeDivAxisMap (addAxisMap (subAxisMap inputSpatial kernelSpatial) strideSizes) strideSizes
+      let zeroPadding = mapAxisMap (const 0) inputSpatial
+      return (output, zeroPadding, zeroPadding)
+    TasoSame -> do
+      output <- safeDivAxisMap (subAxisMap (addAxisMap inputSpatial strideSizes) ones) strideSizes
+      let totalPadding =
+            mapAxisMap (symMax 0) $
+              subAxisMap
+                (addAxisMap (mulAxisMap (subAxisMap output ones) strideSizes) kernelSpatial)
+                inputSpatial
+      lowPadding <- safeDivAxisMap totalPadding (mapAxisMap (const 2) totalPadding)
+      return (output, lowPadding, subAxisMap totalPadding lowPadding)
+  result <-
+    conv
+      input
+      weights
+      config
+      ConvPaddingArgs
+        { convLowPadding = lowPadding,
+          convLDilation = ones,
+          convHighPadding = highPadding,
+          convRDilation = ones
+        }
+  let resultShape =
+        unionAxisMap
+          (restrictAxes convBatchAxes inputShape)
+          $ unionAxisMap
+            (restrictAxes convOutputFeatureAxes weightShape)
+            outputSpatial
+  return result {tensorShape = resultShape}
 
 clamp ::
   ( TensorOperand t (TensorNum a),

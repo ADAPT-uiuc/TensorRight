@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,6 +32,7 @@ library
       TensorRight.Internal.DSL.RelabelMap
       TensorRight.Internal.DSL.Shape
       TensorRight.Internal.DSL.Syntax
+      TensorRight.Internal.DSL.TASO
       TensorRight.Internal.DSL.Verify
       TensorRight.Internal.Util.Error
       TensorRight.Internal.Util.Pretty
@@ -60,6 +61,306 @@ executable rules-debug
       Paths_tensor_right
   hs-source-dirs:
       rules/debug
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-concat
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/concat
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-conv
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/conv
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-enlarge
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/enlarge
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-ewadd
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/ewadd
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-ewmul
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/ewmul
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-matmul2D
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/matmul2D
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-relu
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/relu
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-smul
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/smul
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-split
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/split
+  default-extensions:
+      DuplicateRecordFields
+      OverloadedStrings
+      TypeApplications
+      AllowAmbiguousTypes
+      ScopedTypeVariables
+      FlexibleContexts
+      RankNTypes
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.14 && <5
+    , deepseq
+    , grisette ==0.11.*
+    , hashable
+    , mtl
+    , ordered-containers
+    , prettyprinter
+    , sbv
+    , template-haskell
+    , tensor-right
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+executable rules-taso-transpose
+  main-is: Main.hs
+  other-modules:
+      Paths_tensor_right
+  hs-source-dirs:
+      rules/taso/transpose
   default-extensions:
       DuplicateRecordFields
       OverloadedStrings

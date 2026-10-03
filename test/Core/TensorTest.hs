@@ -55,6 +55,7 @@ import TensorRight.Internal.Core.Tensor.Typed
     createTensor,
     dynamicSlice,
     dynamicUpdateSlice,
+    enlarge,
     indicesInRange,
     iota,
     numBinOp,
@@ -62,6 +63,7 @@ import TensorRight.Internal.Core.Tensor.Typed
     padLow,
     reduce,
     sliceStartEndStrides,
+    tasoEnlarge,
     tensorAccess,
     transpose,
   )
@@ -71,14 +73,20 @@ import TensorRight.Internal.DSL.DSL
     RClassRef (ByRClass),
     newMap,
     newRClass,
+    newRClasses,
     newTensor,
     numBinScalarOp,
     rankPrecondition,
     runDSLContext,
   )
 import qualified TensorRight.Internal.DSL.DSL as DSL
-import TensorRight.Internal.DSL.Expr (Env (exprDTypes, rankConditions), exprId)
-import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
+import TensorRight.Internal.DSL.Expr
+  ( Env (exprDTypes, preConditions, rankConditions),
+    Expr (Enlarge, TasoConv),
+    exprId,
+  )
+import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)), AtSyntax ((@@)))
+import qualified TensorRight.Internal.DSL.TASO as TASO
 import TensorRight.Internal.Util.Error (ErrorEnv)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.HUnit (testCase)
@@ -926,6 +934,79 @@ tensorTest =
                 expected = Just $ TensorElemVal "xa2b1c2"
               }
           ],
+      testGroup "enlarge" $ do
+        let x = simpleTensor @SymInteger "x" [("a", 3), ("b", 2)]
+        [ toTensorTest "pads to the requested size with a floor split" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", 6)])
+                    (fromKVPairs [(Axis "a", 1)]),
+                shape = Just $ fromKVPairs [(Axis "a", 6), (Axis "b", 2)],
+                access = Just $ fromKVPairs [(Axis "a", 0), (Axis "b", 1)],
+                expected = Just $ TensorElemVal 0
+              },
+          toTensorTest "does not shrink dimensions above the target" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", 2)])
+                    (fromKVPairs [(Axis "a", 0)]),
+                shape = Just $ fromKVPairs [(Axis "a", 3), (Axis "b", 2)],
+                access = Just $ fromKVPairs [(Axis "a", 2), (Axis "b", 1)],
+                expected = Just $ TensorElemVal "xa2b1"
+              },
+          toTensorTest "rejects a non-floor lower-padding split" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", 6)])
+                    (fromKVPairs [(Axis "a", 0)]),
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              },
+          toTensorTest "rejects a negative target size" $
+            TensorTest
+              { tensor =
+                  enlarge
+                    x
+                    (fromKVPairs [(Axis "a", -1)])
+                    (fromKVPairs [(Axis "a", 0)]),
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              }
+          ],
+      testGroup "tasoEnlarge" $ do
+        let x = simpleTensor @SymInteger "x" [("n", 1), ("c", 1), ("h", 2), ("w", 2)]
+        let referenceShape = fromKVPairs [(Axis "n", 1), (Axis "c", 1), (Axis "h", 5), (Axis "w", 4)]
+        let spatialAxes = HS.fromList [Axis "h", Axis "w"]
+        [ toTensorTest "centers the source using floor lower padding" $
+            TensorTest
+              { tensor = tasoEnlarge x referenceShape spatialAxes,
+                shape = Just referenceShape,
+                access = Just $ fromKVPairs [(Axis "n", 0), (Axis "c", 0), (Axis "h", 1), (Axis "w", 1)],
+                expected = Just $ TensorElemVal "xn0c0h0w0"
+              },
+          toTensorTest "rejects shrinking a spatial dimension" $
+            TensorTest
+              { tensor = tasoEnlarge x (fromKVPairs [(Axis "n", 1), (Axis "c", 1), (Axis "h", 1), (Axis "w", 2)]) spatialAxes,
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              },
+          toTensorTest "rejects non-rank-four tensors" $
+            TensorTest
+              { tensor = tasoEnlarge (simpleTensor @SymInteger "y" [("h", 2), ("w", 2)]) (fromKVPairs [(Axis "h", 3), (Axis "w", 3)]) spatialAxes,
+                shape = Nothing,
+                access = Nothing,
+                expected = Nothing
+              }
+          ],
       testGroup "transpose" $ do
         let axisa = Axis "a"
         let axisb = Axis "b"
@@ -1343,6 +1424,170 @@ tensorTest =
             case conflictingRanks of
               Left _ -> pure ()
               Right _ -> assertFailure "conflicting ranks should be rejected",
+          testCase "TASO enlarge fixes four singleton axes without semantic preconditions" $ do
+            let result = runDSLContext $ do
+                  n <- newRClass "batch"
+                  c <- newRClass "channel"
+                  h <- newRClass "height"
+                  w <- newRClass "width"
+                  nSize <- newMap "batch-size" n
+                  cSize <- newMap "channel-size" c
+                  hSize <- newMap "height-size" h
+                  wSize <- newMap "width-size" w
+                  targetH <- newMap "target-height" h
+                  targetW <- newMap "target-width" w
+                  input <- newTensor @TensorInt "input" [n --> nSize, c --> cSize, h --> hSize, w --> wSize]
+                  reference <- newTensor @TensorInt "reference" [n --> nSize, c --> cSize, h --> targetH, w --> targetW]
+                  expr <- TASO.enlarge (ByRClass h) (ByRClass w) input reference
+                  pure (expr, [n, c, h, w])
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((expr, rclasses), env) -> do
+                case expr of
+                  Enlarge {} -> pure ()
+                  _ -> assertFailure "expected an Enlarge expression"
+                null (preConditions env) @?= True
+                map (`HM.lookup` rankConditions env) rclasses @?= replicate 4 (Just 1),
+          testCase "TASO convolution has backend-asserted padding semantics" $ do
+            let result = runDSLContext $ do
+                  n <- newRClass "batch"
+                  c <- newRClass "input-channel"
+                  f <- newRClass "output-channel"
+                  h <- newRClass "height"
+                  w <- newRClass "width"
+                  nSize <- newMap "batch-size" n
+                  cSize <- newMap "input-channel-size" c
+                  fSize <- newMap "output-channel-size" f
+                  hSize <- newMap "height-size" h
+                  wSize <- newMap "width-size" w
+                  strideH <- newMap "stride-height" h
+                  strideW <- newMap "stride-width" w
+                  siC <- newMap "si-channel" c
+                  siH <- newMap "si-height" h
+                  siW <- newMap "si-width" w
+                  input <- newTensor @TensorInt "input" [n --> nSize, c --> cSize, h --> hSize, w --> wSize]
+                  weights <- newTensor @TensorInt "weights" [f --> fSize, c --> cSize, h --> hSize, w --> wSize]
+                  let config =
+                        DSL.ConvConfig
+                          { DSL.batchRClasses = [ByRClass n],
+                            DSL.featureRClasses = [ByRClass c],
+                            DSL.outputFeatureRClasses = [ByRClass f],
+                            DSL.strides = [h --> strideH, w --> strideW],
+                            DSL.contractingSIMaps = [c --> siC, h --> siH, w --> siW]
+                          }
+                  expr <- TASO.tasoConv @TensorInt config TASO.Same TASO.None input weights
+                  pure (expr, [n, c, f, h, w])
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((expr, rclasses), env) -> do
+                case expr of
+                  TasoConv {} -> pure ()
+                  _ -> assertFailure "expected a TasoConv expression"
+                null (preConditions env) @?= True
+                map (`HM.lookup` rankConditions env) rclasses @?= replicate 5 (Just 1),
+          testCase "TASO split returns the selected direct concat operand" $ do
+            let result = runDSLContext $ do
+                  axis <- newRClass "axis"
+                  other <- newRClass "other"
+                  lhsSize <- newMap "lhs-size" axis
+                  rhsSize <- newMap "rhs-size" axis
+                  otherSize <- newMap "other-size" other
+                  lhs <- newTensor @TensorInt "lhs" [axis --> lhsSize, other --> otherSize]
+                  rhs <- newTensor @TensorInt "rhs" [axis --> rhsSize, other --> otherSize]
+                  joined <- TASO.concat (ByRClass axis) lhs rhs
+                  first <- TASO.split0 (ByRClass axis) joined
+                  second <- TASO.split1 (ByRClass axis) joined
+                  pure (lhs, rhs, first, second)
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((lhs, rhs, first, second), _) -> do
+                exprId first @?= exprId lhs
+                exprId second @?= exprId rhs,
+          testCase "TASO split rejects non-concat inputs and mismatched axes" $ do
+            let nonConcat = runDSLContext $ do
+                  axis <- newRClass "axis"
+                  size <- newMap "size" axis
+                  input <- newTensor @TensorInt "input" [axis --> size]
+                  TASO.split0 (ByRClass axis) input
+            let mismatchedAxis = runDSLContext $ do
+                  axis <- newRClass "axis"
+                  other <- newRClass "other"
+                  axisSize <- newMap "axis-size" axis
+                  otherSize <- newMap "other-size" other
+                  lhs <- newTensor @TensorInt "lhs" [axis --> axisSize, other --> otherSize]
+                  rhs <- newTensor @TensorInt "rhs" [axis --> axisSize, other --> otherSize]
+                  joined <- TASO.concat (ByRClass axis) lhs rhs
+                  TASO.split0 (ByRClass other) joined
+            case nonConcat of
+              Left _ -> pure ()
+              Right _ -> assertFailure "split should reject a non-concat input"
+            case mismatchedAxis of
+              Left _ -> pure ()
+              Right _ -> assertFailure "split should reject a mismatched axis",
+          testCase "TASO transpose swaps exactly two singleton axes" $ do
+            let result = runDSLContext $ do
+                  axes <- newRClass "axes"
+                  rows <- newMap "rows" axes
+                  columns <- newMap "columns" axes
+                  input <- newTensor @TensorInt "input" [axes --> rows @@ "row", axes --> columns @@ "column"]
+                  output <- TASO.transpose input
+                  pure (output, axes)
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((_, axes), env) ->
+                HM.lookup axes (rankConditions env) @?= Just 1,
+          testCase "TASO transpose rejects tensors other than rank two" $ do
+            let result = runDSLContext $ do
+                  axes <- newRClass "axes"
+                  firstSize <- newMap "first-size" axes
+                  secondSize <- newMap "second-size" axes
+                  thirdSize <- newMap "third-size" axes
+                  input <- newTensor @TensorInt "input" [axes --> firstSize @@ "first", axes --> secondSize @@ "second", axes --> thirdSize @@ "third"]
+                  TASO.transpose input
+            case result of
+              Left _ -> pure ()
+              Right _ -> assertFailure "transpose should reject a non-rank-two tensor",
+          testCase "TASO matmul2D fixes all matrix axes to rank one" $ do
+            let result = runDSLContext $ do
+                  [row, contract, column] <- newRClasses ["row", "contract", "column"]
+                  rowSize <- newMap "row-size" row
+                  inputContractSize <- newMap "input-contract-size" contract
+                  weightContractSize <- newMap "weight-contract-size" contract
+                  columnSize <- newMap "column-size" column
+                  contractSI <- newMap "contract-si" contract
+                  input <- newTensor @TensorInt "input" [row --> rowSize, contract --> inputContractSize]
+                  weights <- newTensor @TensorInt "weights" [contract --> weightContractSize, column --> columnSize]
+                  output <- TASO.matmul2D input weights [contract --> contractSI]
+                  pure (output, [row, contract, column])
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((_, rclasses), env) ->
+                map (`HM.lookup` rankConditions env) rclasses @?= replicate 3 (Just 1),
+          testCase "TASO matmul2D rejects non-matrix inputs and wrong contraction counts" $ do
+            let nonMatrixInput = runDSLContext $ do
+                  [row, contract, extra, column] <- newRClasses ["row", "contract", "extra", "column"]
+                  rowSize <- newMap "row-size" row
+                  contractSize <- newMap "contract-size" contract
+                  extraSize <- newMap "extra-size" extra
+                  columnSize <- newMap "column-size" column
+                  contractSI <- newMap "contract-si" contract
+                  input <- newTensor @TensorInt "input" [row --> rowSize, contract --> contractSize, extra --> extraSize]
+                  weights <- newTensor @TensorInt "weights" [contract --> contractSize, column --> columnSize]
+                  TASO.matmul2D input weights [contract --> contractSI]
+            let wrongContractionCount = runDSLContext $ do
+                  [row, contract, column] <- newRClasses ["row", "contract", "column"]
+                  rowSize <- newMap "row-size" row
+                  contractSize <- newMap "contract-size" contract
+                  columnSize <- newMap "column-size" column
+                  input <- newTensor @TensorInt "input" [row --> rowSize, contract --> contractSize]
+                  weights <- newTensor @TensorInt "weights" [contract --> contractSize, column --> columnSize]
+                  TASO.matmul2D input weights []
+            case nonMatrixInput of
+              Left _ -> pure ()
+              Right _ -> assertFailure "matmul2D should reject a non-matrix input"
+            case wrongContractionCount of
+              Left _ -> pure ()
+              Right _ -> assertFailure "matmul2D should require exactly one contracting axis",
           testCase "iota and concat require a rank-one axis" $ do
             let iotaResult = runDSLContext $ do
                   rclass <- newRClass "rclass"

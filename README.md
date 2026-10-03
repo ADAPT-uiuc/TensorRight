@@ -92,7 +92,20 @@ make verify
 ```
 
 Running `make verify` tries to verify all the 125 implemented rewrite rules.
-It results in 3 expected timeouts (the actual number could vary).
+It results in 2 expected timeouts (the actual number could vary).
+
+#### TASO Rules
+
+TASO rewrite axioms can be verified with:
+
+```bash
+./runall.sh taso
+```
+
+Current results: 34 verified rules and 1 expected timeout (enlarge desugaring).
+Relative to TASO’s 43 active upstream axiom schemas, 28 are verified, 3 are
+ported but intentionally not invoked due to missing reduction axioms, and
+12 remain unimplemented, primarily pooling and TASO-specific constant operators.
 
 ## Usage
 

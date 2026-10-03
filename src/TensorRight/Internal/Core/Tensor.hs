@@ -35,6 +35,8 @@ module TensorRight.Internal.Core.Tensor
     slice,
     pad,
     padLow,
+    enlarge,
+    tasoEnlarge,
     relabel,
     transpose,
     concatTensor,
@@ -44,6 +46,7 @@ module TensorRight.Internal.Core.Tensor
     dot,
     convBase,
     conv,
+    tasoConv,
     clamp,
     clampScalar,
     reverseTensor,
@@ -74,6 +77,7 @@ import TensorRight.Internal.Core.Tensor.Typed
   ( ConvConfigArgs,
     ConvPaddingArgs,
     PaddingArgs,
+    TasoPaddingMode,
   )
 import qualified TensorRight.Internal.Core.Tensor.Typed as Typed
 import TensorRight.Internal.Util.Error (ErrorEnv)
@@ -461,6 +465,32 @@ padLow to elem lowPadConfig = do
   t <- tensor to
   genericApplyUnaryWithElem (\t e -> Typed.padLow t e lowPadConfig) t elem
 
+enlarge ::
+  (TensorOperand t) =>
+  t ->
+  Sizes ->
+  Sizes ->
+  ErrorEnv Tensor
+enlarge to targetSizes lowPadding = do
+  t <- tensor to
+  case t of
+    RealTensor t' -> mrgFmap RealTensor $ Typed.enlarge t' targetSizes lowPadding
+    IntTensor t' -> mrgFmap IntTensor $ Typed.enlarge t' targetSizes lowPadding
+    BoolTensor _ -> mrgThrowError "enlarge: only valid for IntTensors and RealTensors"
+
+tasoEnlarge ::
+  (TensorOperand source, TensorOperand reference) =>
+  source -> reference -> Axes -> ErrorEnv Tensor
+tasoEnlarge source reference spatialAxes = do
+  source' <- tensor source
+  reference' <- tensor reference
+  if tensorDType source' /= tensorDType reference'
+    then mrgThrowError "tasoEnlarge: source and reference must have the same type"
+    else case source' of
+      RealTensor t -> mrgFmap RealTensor $ Typed.tasoEnlarge t (tensorShape reference') spatialAxes
+      IntTensor t -> mrgFmap IntTensor $ Typed.tasoEnlarge t (tensorShape reference') spatialAxes
+      BoolTensor _ -> mrgThrowError "tasoEnlarge: only valid for IntTensors and RealTensors"
+
 relabel :: (TensorOperand t) => t -> HM.HashMap Axis Axis -> ErrorEnv Tensor
 relabel to permutation =
   genericApplyUnary (`Typed.relabel` permutation) =<< tensor to
@@ -555,6 +585,22 @@ conv inputo weightso baseConfig paddingConfig = do
   applyValBinary
     (\i w -> Typed.conv i w baseConfig paddingConfig)
     (\i w -> Typed.conv i w baseConfig paddingConfig)
+    input
+    weights
+
+tasoConv ::
+  (TensorOperand t1, TensorOperand t2) =>
+  t1 ->
+  t2 ->
+  TasoPaddingMode ->
+  ConvConfigArgs ->
+  ErrorEnv Tensor
+tasoConv inputo weightso mode baseConfig = do
+  input <- tensor inputo
+  weights <- tensor weightso
+  applyValBinary
+    (\i w -> Typed.tasoConv i w mode baseConfig)
+    (\i w -> Typed.tasoConv i w mode baseConfig)
     input
     weights
 

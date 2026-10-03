@@ -18,6 +18,7 @@ module TensorRight.Internal.DSL.Expr
     PaddingArgsExpr (..),
     ConvConfigArgsExpr (..),
     ConvPaddingArgsExpr (..),
+    TasoPaddingMode (..),
     SliceArgsExpr (..),
     DySliceArgsExpr (..),
     UExpr (..),
@@ -55,6 +56,7 @@ import Grisette
     MergingStrategy (NoStrategy),
     PPrint (pformat, pformatPrec),
     SymBool,
+    SymInteger,
     TryMerge,
     viaShow,
   )
@@ -119,6 +121,12 @@ data ConvPaddingArgsExpr = ConvPaddingArgsExpr
   deriving (Hashable)
   deriving (PPrint) via (Default ConvPaddingArgsExpr)
 
+-- | Padding modes in TASO's Conv2D operator.
+data TasoPaddingMode = Same | Valid
+  deriving (Generic, Eq, Show)
+  deriving (Hashable)
+  deriving (PPrint) via (Default TasoPaddingMode)
+
 data SliceArgsExpr = SliceArgsExpr
   { start :: Params,
     end :: Params,
@@ -177,6 +185,11 @@ data ExprDescription
         _padElem :: Elem,
         _lowPadding :: Params
       }
+  | EnlargeDescription
+      { _expr :: Int,
+        _reference :: Int,
+        _spatialAxes :: [RClassRef]
+      }
   | DynamicSliceDescription
       { _expr :: Int,
         _dySlice :: DySliceArgsExpr
@@ -205,6 +218,12 @@ data ExprDescription
         _weight :: Int,
         _convConfig :: ConvConfigArgsExpr,
         _convPadding :: ConvPaddingArgsExpr
+      }
+  | TasoConvDescription
+      { _input :: Int,
+        _weight :: Int,
+        _tasoPaddingMode :: TasoPaddingMode,
+        _convConfig :: ConvConfigArgsExpr
       }
   | ClampDescription {_min :: Int, _expr :: Int, _max :: Int}
   | ClampScalarDescription
@@ -247,6 +266,11 @@ data UExpr
         _padElem :: Elem,
         _lowPadding :: Params
       }
+  | UEnlarge
+      { _expr :: Expr,
+        _reference :: Expr,
+        _spatialAxes :: [RClassRef]
+      }
   | UDynamicSlice {_expr :: Expr, _dySlice :: DySliceArgsExpr}
   | UDynamicUpdateSlice {_expr :: Expr, _update :: Expr, _start :: Params}
   | UConcat {_lhs :: Expr, _rhs :: Expr, _axis :: RClassRef}
@@ -268,6 +292,12 @@ data UExpr
         _weight :: Expr,
         _convConfig :: ConvConfigArgsExpr,
         _convPadding :: ConvPaddingArgsExpr
+      }
+  | UTasoConv
+      { _input :: Expr,
+        _weight :: Expr,
+        _tasoPaddingMode :: TasoPaddingMode,
+        _convConfig :: ConvConfigArgsExpr
       }
   | UClamp {_min :: Expr, _expr :: Expr, _max :: Expr}
   | UClampScalar
@@ -299,6 +329,7 @@ describe (UIota s d) = IotaDescription s d
 describe (USlice e s) = SliceDescription (_id e) s
 describe (UPad e v c) = PadDescription (_id e) v c
 describe (UPadLow e v c) = PadLowDescription (_id e) v c
+describe (UEnlarge e r a) = EnlargeDescription (_id e) (_id r) a
 describe (UDynamicSlice e s) = DynamicSliceDescription (_id e) s
 describe (UDynamicUpdateSlice e u s) = DynamicUpdateSliceDescription (_id e) (_id u) s
 describe (UConcat l r d) = ConcatDescription (_id l) (_id r) d
@@ -307,6 +338,7 @@ describe (URelabel e m) = RelabelDescription (_id e) m
 describe (UDot l r c b) = DotDescription (_id l) (_id r) c b
 describe (UConvBase i w c) = ConvBaseDescription (_id i) (_id w) c
 describe (UConv i w c p) = ConvDescription (_id i) (_id w) c p
+describe (UTasoConv i w m c) = TasoConvDescription (_id i) (_id w) m c
 describe (UClamp mi e ma) = ClampDescription (_id mi) (_id e) (_id ma)
 describe (UClampScalar mi e ma) = ClampScalarDescription mi (_id e) ma
 describe (UReverseTensor e a) = ReverseTensorDescription (_id e) a
@@ -357,6 +389,12 @@ data Expr
         _padElem :: Elem,
         _lowPadding :: Params
       }
+  | Enlarge
+      { _id :: Int,
+        _expr :: Expr,
+        _reference :: Expr,
+        _spatialAxes :: [RClassRef]
+      }
   | DynamicSlice
       { _id :: Int,
         _expr :: Expr,
@@ -394,6 +432,13 @@ data Expr
         _weight :: Expr,
         _convConfig :: ConvConfigArgsExpr,
         _convPadding :: ConvPaddingArgsExpr
+      }
+  | TasoConv
+      { _id :: Int,
+        _input :: Expr,
+        _weight :: Expr,
+        _tasoPaddingMode :: TasoPaddingMode,
+        _convConfig :: ConvConfigArgsExpr
       }
   | Clamp {_id :: Int, _min :: Expr, _expr :: Expr, _max :: Expr}
   | ClampScalar
@@ -497,6 +542,8 @@ instance PPrint Expr where
     prettyWithConstructor n "pad" [pformatPrec 11 e, pformatPrec 11 v, pformatPrec 11 c]
   pformatPrec n (PadLow _ e v c) =
     prettyWithConstructor n "padLow" [pformatPrec 11 e, pformatPrec 11 v, pformatPrec 11 c]
+  pformatPrec n (Enlarge _ e r a) =
+    prettyWithConstructor n "tasoEnlarge" [pformatPrec 11 e, pformatPrec 11 r, pformatPrec 11 a]
   pformatPrec n (DynamicSlice _ e s) =
     prettyWithConstructor n "dynamicSlice" [pformatPrec 11 e, pformatPrec 11 s]
   pformatPrec n (DynamicUpdateSlice _ e u s) =
@@ -525,6 +572,15 @@ instance PPrint Expr where
         "weights=" <> pformatPrec 11 w,
         pformatPrec 11 c,
         pformatPrec 11 p
+      ]
+  pformatPrec n (TasoConv _ i w m c) =
+    prettyWithConstructor
+      n
+      "tasoConv"
+      [ "inputs=" <> pformatPrec 11 i,
+        "weights=" <> pformatPrec 11 w,
+        pformatPrec 11 m,
+        pformatPrec 11 c
       ]
   pformatPrec n (Clamp _ mi e ma) =
     prettyWithConstructor
@@ -577,6 +633,7 @@ identify i (UIota s d) = Iota i s d
 identify i (USlice e s) = Slice i e s
 identify i (UPad e v c) = Pad i e v c
 identify i (UPadLow e v c) = PadLow i e v c
+identify i (UEnlarge e r a) = Enlarge i e r a
 identify i (UDynamicSlice e s) = DynamicSlice i e s
 identify i (UDynamicUpdateSlice e u s) = DynamicUpdateSlice i e u s
 identify i (UConcat l r d) = Concat i l r d
@@ -585,6 +642,7 @@ identify i (URelabel e m) = Relabel i e m
 identify i (UDot l r c b) = Dot i l r c b
 identify i (UConvBase input w c) = ConvBase i input w c
 identify i (UConv input w c p) = Conv i input w c p
+identify i (UTasoConv input w m c) = TasoConv i input w m c
 identify i (UClamp mi e ma) = Clamp i mi e ma
 identify i (UClampScalar mi e ma) = ClampScalar i mi e ma
 identify i (UReverseTensor e a) = ReverseTensor i e a

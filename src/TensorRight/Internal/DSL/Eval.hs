@@ -71,6 +71,7 @@ import TensorRight.Internal.Core.Tensor
     dot,
     dynamicSlice,
     dynamicUpdateSlice,
+    enlarge,
     iota,
     numBinOp,
     numScalarBinOp,
@@ -83,6 +84,8 @@ import TensorRight.Internal.Core.Tensor
     reverseTensor,
     select,
     slice,
+    tasoConv,
+    tasoEnlarge,
   )
 import TensorRight.Internal.Core.Tensor.Typed
   ( ConvConfigArgs
@@ -103,6 +106,7 @@ import TensorRight.Internal.Core.Tensor.Typed
     DySliceArgs (DySliceArgs, sizes, start),
     PaddingArgs (PaddingArgs, highPad, interiorPad, lowPad),
     SliceArgs (SliceArgs, end, start, strides),
+    TasoPaddingMode (TasoSame, TasoValid),
     TensorElem (TensorElemVal),
   )
 import TensorRight.Internal.DSL.Expr
@@ -132,6 +136,7 @@ import TensorRight.Internal.DSL.Expr
         Dot,
         DynamicSlice,
         DynamicUpdateSlice,
+        Enlarge,
         Iota,
         NumBinOp,
         NumScalarBinOp,
@@ -144,12 +149,14 @@ import TensorRight.Internal.DSL.Expr
         ReverseTensor,
         Select,
         Slice,
+        TasoConv,
         Var
       ),
     PaddingArgsExpr (PaddingArgsExpr, high, interior, low),
     Params,
     Rewrite (Rewrite),
     SliceArgsExpr (SliceArgsExpr, end, start, strides),
+    TasoPaddingMode (Same, Valid),
     exprId,
   )
 import TensorRight.Internal.DSL.Identifier (MapIdentifier, RClassIdentifier, TensorIdentifier)
@@ -393,6 +400,12 @@ eval' (PadLow _ expr elem lowPadding) = do
   e <- eval expr
   l <- getSizesFromParams lowPadding
   return $ padLow e elem l
+eval' (Enlarge _ expr reference spatialAxes) = do
+  e <- eval expr
+  r <- eval reference
+  shape <- exprShape expr
+  axes <- rclassesToAxes shape spatialAxes
+  return $ tasoEnlarge e r axes
 eval' (DynamicSlice _ expr DySliceArgsExpr {..}) = do
   e <- eval expr
   start <- getIndicesFromParams start
@@ -502,6 +515,38 @@ eval'
             convLDilation = ld,
             convHighPadding = h,
             convRDilation = rd
+          }
+eval'
+  ( TasoConv
+      _
+      input
+      weight
+      mode
+      ConvConfigArgsExpr {..}
+    ) = do
+    i <- eval input
+    w <- eval weight
+    lhsShape <- exprShape input
+    rhsShape <- exprShape weight
+    batchAxes <- rclassesToAxes lhsShape batchRClasses
+    featureAxes <- rclassesToAxes lhsShape featureRClasses
+    outputFeatureAxes <- rclassesToAxes rhsShape outputFeatureRClasses
+    s <- getIndicesFromParams strides
+    si <- getIndicesFromParams contractingSIMaps
+    let coreMode = case mode of
+          Same -> TasoSame
+          Valid -> TasoValid
+    return $
+      tasoConv
+        i
+        w
+        coreMode
+        ConvConfigArgs
+          { convBatchAxes = batchAxes,
+            convFeatureAxes = featureAxes,
+            convOutputFeatureAxes = outputFeatureAxes,
+            convStrides = s,
+            convContractingSIMap = si
           }
 eval' (Clamp _ emin' e' emax') = do
   emin <- eval emin'
