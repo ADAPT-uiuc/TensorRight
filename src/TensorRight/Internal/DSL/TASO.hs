@@ -14,6 +14,7 @@ module TensorRight.Internal.DSL.TASO
     split0,
     split1,
     transpose,
+    matmul2D,
     enlarge,
   )
 where
@@ -34,6 +35,7 @@ import TensorRight.Internal.DSL.DSL
     ValidNum,
     clampScalar,
     concatTensor,
+    dot,
     liftInContext,
     numBinOp,
     numBinScalarOp,
@@ -53,6 +55,7 @@ import TensorRight.Internal.DSL.Shape
     abstractShapeAllRefs,
     getRClassByRClassRef,
   )
+import TensorRight.Internal.DSL.Parameters (ParamDesc)
 import TensorRight.Internal.Util.Error (assert)
 import TensorRight.Internal.DSL.Syntax (ArrowSyntax ((-->)))
 import Prelude hiding (concat)
@@ -125,6 +128,31 @@ transpose expr' = do
   traverse_ (`rankPrecondition` 1) rclasses
   let [first, second] = refs
   relabel expr [first --> second, second --> first]
+
+-- | TASO's rule-level matrix multiplication. TASO's graph implementation can
+-- construct batched matmuls, but its published axiom set restricts matmul to
+-- two-dimensional matrices. The sole entry in @contract@ selects the shared
+-- inner dimension.
+matmul2D ::
+  (ExprInContext lhs, ExprInContext rhs) =>
+  lhs ->
+  rhs ->
+  [ParamDesc] ->
+  DSLContext Expr
+matmul2D lhs' rhs' contract = do
+  lhs <- liftInContext lhs'
+  rhs <- liftInContext rhs'
+  lhsShape <- shapeOf lhs
+  rhsShape <- shapeOf rhs
+  let lhsRefs = HS.toList $ abstractShapeAllRefs lhsShape
+      rhsRefs = HS.toList $ abstractShapeAllRefs rhsShape
+  assert "tasoMatmul2D: left input must have exactly two axes" $ length lhsRefs == 2
+  assert "tasoMatmul2D: right input must have exactly two axes" $ length rhsRefs == 2
+  assert "tasoMatmul2D: expected exactly one contracting axis" $ length contract == 1
+  lhsRClasses <- traverse (getRClassByRClassRef lhsShape) lhsRefs
+  rhsRClasses <- traverse (getRClassByRClassRef rhsShape) rhsRefs
+  traverse_ (`rankPrecondition` 1) $ lhsRClasses <> rhsRClasses
+  dot lhs rhs contract []
 
 -- | TASO's rank-four enlarge operator. It centers @source@ in the H/W shape
 -- of @reference@. The frontend fixes the four abstract axes to singleton

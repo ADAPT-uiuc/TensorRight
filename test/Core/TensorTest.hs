@@ -73,6 +73,7 @@ import TensorRight.Internal.DSL.DSL
     RClassRef (ByRClass),
     newMap,
     newRClass,
+    newRClasses,
     newTensor,
     numBinScalarOp,
     rankPrecondition,
@@ -1509,6 +1510,47 @@ tensorTest =
             case result of
               Left _ -> pure ()
               Right _ -> assertFailure "transpose should reject a non-rank-two tensor",
+          testCase "TASO matmul2D fixes all matrix axes to rank one" $ do
+            let result = runDSLContext $ do
+                  [row, contract, column] <- newRClasses ["row", "contract", "column"]
+                  rowSize <- newMap "row-size" row
+                  inputContractSize <- newMap "input-contract-size" contract
+                  weightContractSize <- newMap "weight-contract-size" contract
+                  columnSize <- newMap "column-size" column
+                  contractSI <- newMap "contract-si" contract
+                  input <- newTensor @TensorInt "input" [row --> rowSize, contract --> inputContractSize]
+                  weights <- newTensor @TensorInt "weights" [contract --> weightContractSize, column --> columnSize]
+                  output <- TASO.matmul2D input weights [contract --> contractSI]
+                  pure (output, [row, contract, column])
+            case result of
+              Left err -> assertFailure $ show err
+              Right ((_, rclasses), env) ->
+                map (`HM.lookup` rankConditions env) rclasses @?= replicate 3 (Just 1),
+          testCase "TASO matmul2D rejects non-matrix inputs and wrong contraction counts" $ do
+            let nonMatrixInput = runDSLContext $ do
+                  [row, contract, extra, column] <- newRClasses ["row", "contract", "extra", "column"]
+                  rowSize <- newMap "row-size" row
+                  contractSize <- newMap "contract-size" contract
+                  extraSize <- newMap "extra-size" extra
+                  columnSize <- newMap "column-size" column
+                  contractSI <- newMap "contract-si" contract
+                  input <- newTensor @TensorInt "input" [row --> rowSize, contract --> contractSize, extra --> extraSize]
+                  weights <- newTensor @TensorInt "weights" [contract --> contractSize, column --> columnSize]
+                  TASO.matmul2D input weights [contract --> contractSI]
+            let wrongContractionCount = runDSLContext $ do
+                  [row, contract, column] <- newRClasses ["row", "contract", "column"]
+                  rowSize <- newMap "row-size" row
+                  contractSize <- newMap "contract-size" contract
+                  columnSize <- newMap "column-size" column
+                  input <- newTensor @TensorInt "input" [row --> rowSize, contract --> contractSize]
+                  weights <- newTensor @TensorInt "weights" [contract --> contractSize, column --> columnSize]
+                  TASO.matmul2D input weights []
+            case nonMatrixInput of
+              Left _ -> pure ()
+              Right _ -> assertFailure "matmul2D should reject a non-matrix input"
+            case wrongContractionCount of
+              Left _ -> pure ()
+              Right _ -> assertFailure "matmul2D should require exactly one contracting axis",
           testCase "iota and concat require a rank-one axis" $ do
             let iotaResult = runDSLContext $ do
                   rclass <- newRClass "rclass"
