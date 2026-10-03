@@ -36,6 +36,7 @@ module TensorRight.Internal.DSL.DSL
     newTensor,
     numBinOp,
     boolBinOp,
+    rankPrecondition,
     reduce,
     siRelation,
     precondition,
@@ -124,7 +125,7 @@ import TensorRight.Internal.DSL.Expr
     ConvPaddingArgsExpr (ConvPaddingArgsExpr, high, ldilation, low, rdilation),
     DSLContext,
     DySliceArgsExpr (DySliceArgsExpr, sizes, start),
-    Env (Env, lhsSIMaps, numTensorAssumptions),
+    Env (Env, lhsSIMaps, numTensorAssumptions, rankConditions),
     Expr,
     NumTensorAssumption (NumTensorAssumption),
     PaddingArgsExpr (PaddingArgsExpr, high, interior, low),
@@ -178,7 +179,6 @@ import TensorRight.Internal.DSL.Expr
     rhsSIMaps,
     runDSLContext,
     siRelations,
-    singletonRClasses,
     tensorDTypes,
     tensorShapes,
     validTensorShape,
@@ -390,6 +390,21 @@ precondition ::
   ([SymInteger] -> SymBool) ->
   DSLContext ()
 precondition maps = precondition' maps . zipCondition
+
+-- | Require an RClass to have exactly the given rank during verification.
+rankPrecondition ::
+  RClassIdentifier ->
+  Int ->
+  DSLContext ()
+rankPrecondition rclass rank = do
+  assert "rankPrecondition: rank must be at least 1" $ rank >= 1
+  env <- get
+  assert "rankPrecondition: RClass must be declared" $ rclass `HS.member` declaredRClasses env
+  case HM.lookup rclass (rankConditions env) of
+    Nothing -> pure ()
+    Just previousRank ->
+      assert "rankPrecondition: conflicting ranks for the same RClass" $ previousRank == rank
+  put $ env {rankConditions = HM.insert rclass rank (rankConditions env)}
 
 -- | Add an SI relation to rewriting rule.
 -- It is similar to 'precondition', but it is used to specify the SI relations.
@@ -672,8 +687,7 @@ iota shapeDesc d = do
     validTensorShape shape
     let abstractShape = toAbstractShape shape
     rclass <- getRClassByRClassRef abstractShape d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    rankPrecondition rclass 1
     return (abstractShape, IntType)
 
 -- | The named arguments to the 'slice' operation.
@@ -1096,8 +1110,7 @@ concatTensor lhs' rhs' d = do
     assert "lhs and rhs must have the same rclasses" $ shapeLhs == shapeRhs
     assert "lhs and rhs must have the same type" $ tyLhs == tyRhs
     rclass <- getRClassByRClassRef shapeLhs d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    rankPrecondition rclass 1
     return (shapeLhs, tyLhs)
 
 -- | Concatenate a list of tensors.
@@ -1117,8 +1130,7 @@ concatTensorList exprs' d = do
     assert "All tensors in concatList must have the same RClasses" $ all (== head shapes) shapes
     assert "All tensors in concatList must have the same type" $ all (== head tys) tys
     rclass <- getRClassByRClassRef (head shapes) d
-    env <- get
-    put $ env {singletonRClasses = HS.insert rclass (singletonRClasses env)}
+    rankPrecondition rclass 1
     return (head shapes, head tys)
 
 -- | Relabel operation.
