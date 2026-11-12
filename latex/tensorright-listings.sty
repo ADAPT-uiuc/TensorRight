@@ -1,0 +1,132 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tensorright-listings}[2026/11/11 TensorRight listings language and style]
+
+\RequirePackage{listings}
+\RequirePackage{xcolor}
+
+% A self-contained Haskell dialect for TensorRight rewrite rules.
+%
+% listings' built-in Haskell language puts the entire Prelude (Int, sum, max,
+% ...) into the keyword class, so this language starts from scratch: only
+% reserved words are keywords. It highlights the public TensorRight DSL
+% (module TensorRight) and the Grisette operators that rules use in
+% preconditions. Internal modules are not covered.
+\lstdefinelanguage{TensorRight}{
+  % Haskell identifiers may contain primes (size', rc0Size'').
+  alsodigit={'},
+  % Symbolic operators that are highlighted as keywords. They must be declared
+  % here before they can be listed in a keyword class below. listings cannot
+  % match an operator that is a prefix of another one (.< and .<=), so the
+  % Grisette comparison operators are handled by `literate' in the style.
+  otherkeywords={-->,@@,<-,->,=>,::},
+  % Haskell reserved words (class 1).
+  morekeywords={
+    case,class,data,default,deriving,do,else,forall,hiding,if,import,in,
+    infix,infixl,infixr,instance,let,module,newtype,of,qualified,then,type,
+    where
+  },
+  % Haskell syntax (class 2).
+  morekeywords=[2]{<-,->,=>,::},
+  % TensorRight DSL: declarations, tensor operations, preconditions,
+  % rewrites and verification entry points (class 3).
+  morekeywords=[3]{
+    % RClasses, maps and tensors
+    newRClass,newRClasses,newMap,newMaps,newNonNegMap,newNonNegMaps,
+    newConstMap,newConstMaps,combineMap,sumMap,newTensor,
+    % Tensor operations
+    boolBinOp,boolBinScalarOp,boolElem,boolUnaryOp,broadcast,clamp,
+    clampScalar,compareOp,concatTensor,concatTensorList,constant,conv,
+    convBase,dot,dynamicSlice,dynamicUpdateSlice,elemWiseArith,elemWiseCond,
+    intElem,iota,numBinOp,numBinScalarOp,numUnaryOp,pad,padLow,reduce,
+    relabel,reshapeDegenerate,reverseTensor,select,slice,unaryArith,
+    unaryCond,zipCondition,
+    % Preconditions and assumptions
+    precondition,precondition',siRelation,siRelation',checkSIMap,
+    numTensorAssumption,monitorExprOnFailure,monitorMapOnFailure,
+    % Rewrites and verification
+    rewrite,verifyDSL,verifyDSLWith,verifyNumDSL,verifyNumDSLWith,
+    verifyAnyDTypeDSL,verifyAnyDTypeDSLWith
+  },
+  % Public types used in rule signatures and configurations (class 4).
+  morekeywords=[4]{
+    AnyDTypeRule,NumRule,DSLContext,Rewrite,DType,RClassRef,
+    TensorInt,TensorReal,TensorNum,ValidElem,ValidNum,
+    Slice,DySlice,Padding,ConvConfig,ConvPadding,
+    BoolBinOp,BoolUnaryOp,CompareOp,NumBinOp,NumUnaryOp,
+    IO,Bool,Int,Integer,String
+  },
+  % Constructors, element constants and solver configurations (class 5).
+  morekeywords=[5]{
+    ByRClass,ByLabel,IntType,RealType,BoolType,
+    Add,Mul,Min,Max,Sub,Div,Rem,Neg,Abs,Exp,Or,And,Not,
+    Lt,Le,Eqv,Ne,Ge,Gt,
+    posInf,negInf,nonInf,True,False,true,false,
+    z3,cvc5,bitwuzla
+  },
+  % Record fields of operator configurations (class 6).
+  morekeywords=[6]{
+    start,end,strides,sizes,low,high,interior,ldilation,rdilation,
+    batchRClasses,featureRClasses,outputFeatureRClasses,contractingSIMaps
+  },
+  % TensorRight shape syntax: rclass --> map @@ "label" (class 7).
+  morekeywords=[7]{-->,@@},
+  % Grisette symbolic operations used in preconditions (class 8).
+  % The operators .== .<= .&& etc. get the same style via `literate'.
+  morekeywords=[8]{
+    symNot,symMin,symMax,symIte,divOr,modOr,remOr,quotOr,con,ssym
+  },
+  sensitive=true,
+  morecomment=[l]--,
+  morecomment=[n]{\{-}{-\}},
+  morestring=[b]"
+}
+
+\definecolor{TensorRightHaskell}{HTML}{242424}
+\definecolor{TensorRightFunction}{HTML}{005A9C}
+\definecolor{TensorRightType}{HTML}{6A3D9A}
+\definecolor{TensorRightConstant}{HTML}{006B5B}
+\definecolor{TensorRightField}{HTML}{7A4E00}
+\definecolor{TensorRightComment}{HTML}{526257}
+\definecolor{TensorRightString}{HTML}{9A3412}
+
+% Style of the Grisette operators (.== .<= .&& ...), which are typeset through
+% `literate' rather than a keyword class. Redefine to restyle them.
+\newcommand*\tensorrightopstyle{\color{TensorRightFunction}}
+\newcommand*\TensorRightOp[1]{{\tensorrightopstyle#1}}
+
+\lstdefinestyle{tensorright}{
+  language=TensorRight,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bfseries\color{TensorRightHaskell},
+  keywordstyle=[2]\color{TensorRightHaskell},
+  keywordstyle=[3]\color{TensorRightFunction},
+  keywordstyle=[4]\color{TensorRightType},
+  keywordstyle=[5]\color{TensorRightConstant},
+  keywordstyle=[6]\color{TensorRightField},
+  keywordstyle=[7]\bfseries\color{TensorRightField},
+  keywordstyle=[8]\color{TensorRightFunction},
+  commentstyle=\itshape\color{TensorRightComment},
+  stringstyle=\color{TensorRightString},
+  % Grisette operators, then Unicode arrows that rule names often contain
+  % (pdfLaTeX cannot typeset them verbatim). A style that sets `literate'
+  % itself replaces this list, so copy it there if needed. Unlike keywords,
+  % literate entries match one that is a prefix of another (.< and .<=) only
+  % when the shorter one is listed first. They also apply inside comments and
+  % strings.
+  literate=
+    {.==}{{\TensorRightOp{.==}}}3
+    {./=}{{\TensorRightOp{./=}}}3
+    {.<}{{\TensorRightOp{.<}}}2
+    {.>}{{\TensorRightOp{.>}}}2
+    {.<=}{{\TensorRightOp{.<=}}}3
+    {.>=}{{\TensorRightOp{.>=}}}3
+    {.&&}{{\TensorRightOp{.\&\&}}}3
+    {.||}{{\TensorRightOp{.||}}}3
+    {⇒}{{$\Rightarrow$}}1
+    {→}{{$\rightarrow$}}1,
+  showstringspaces=false,
+  keepspaces=true,
+  columns=fullflexible,
+  breaklines=true,
+  upquote=true
+}
